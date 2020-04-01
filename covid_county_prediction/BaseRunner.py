@@ -3,9 +3,9 @@ import torch.nn as nn
 from torch.optim import lr_scheduler
 from abc import abstractmethod, ABCMeta
 import tensorboardX
-import utils
+import covid_county_prediction.utils as utils
 import time
-import constants
+import covid_county_prediction.constants as constants
 import os
 from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler

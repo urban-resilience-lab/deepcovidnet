@@ -1,7 +1,7 @@
-import BaseRunner
+import covid_county_prediction.BaseRunner as BaseRunner
 import torchvision.models as models
 import torch.nn as nn
-import constants
+import covid_county_prediction.constants as constants
 import torch
 import torchvision.datasets as datasets
 import torch.utils.data as data

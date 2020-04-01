@@ -1,8 +1,7 @@
 import torch, os, matplotlib
-import matplotlib.pyplot as plt
 import numpy as np
 from collections import defaultdict
-import constants
+import covid_county_prediction.constants as constants
 
 PLOT_FLAG_MAP = {
     'continuous': '-',
