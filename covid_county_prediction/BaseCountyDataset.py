@@ -10,7 +10,7 @@ class BaseCountyDataset(Dataset, ABC):
     def __init__(self):
         # load all required data here
         self.poi_to_cbg = self.make_poi_to_cbg_dict()
-        self.census = self.make_census_dict()
+        self.census = self.make_census_df()
 
     def make_poi_to_cbg_dict(self):
         df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, usecols=['safegraph_place_id', 'countyFIPS'])
@@ -19,7 +19,7 @@ class BaseCountyDataset(Dataset, ABC):
         return df['countyFIPS'].to_dict()
 
     @staticmethod
-    def make_census_dict():
+    def make_census_df():
         if __name__ == '__main__':
             main_df = pd.DataFrame()
             for file in glob.glob(constants.PATH_TO_SAFEGRAPH_OPEN_CENSUS_DATA + "cbg_*.csv"):
@@ -35,7 +35,7 @@ class BaseCountyDataset(Dataset, ABC):
                 # Aggregate data by FIPS codes
                 df = df.groupby("FIPS").sum()
                 main_df = main_df.join(df, how="outer")
-            return main_df.to_dict()
+            return main_df
 
     @abstractmethod
     def __len__(self):
