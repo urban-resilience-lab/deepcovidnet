@@ -19,3 +19,7 @@ MODELS_BASE_DIR = os.path.join(
     Path(os.path.dirname(os.path.abspath(__file__))).parent, 'models')
 DATA_BASE_DIR = os.path.join(
     Path(os.path.dirname(os.path.abspath(__file__))).parent, 'data')
+
+
+### BaseCountyDataset
+PLACE_COUNTY_CBG_FILE = os.path.join(DATA_BASE_DIR, 'placeCountyCBG.csv')
