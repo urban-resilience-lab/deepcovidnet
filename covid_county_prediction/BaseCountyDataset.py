@@ -10,6 +10,7 @@ class BaseCountyDataset(Dataset, ABC):
     def __init__(self):
         # load all required data here
         self.poi_to_cbg = self.make_poi_to_cbg_dict()
+        self.census = self.make_census_dict()
 
     def make_poi_to_cbg_dict(self):
         df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, usecols=['safegraph_place_id', 'countyFIPS'])
