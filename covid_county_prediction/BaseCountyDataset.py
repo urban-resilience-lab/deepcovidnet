@@ -6,21 +6,34 @@ import covid_county_prediction.constants as constants
 import numpy as np
 import re
 
-
 class BaseCountyDataset(Dataset, ABC):
     def __init__(self):
         # load all required data here
-        self.poi_to_countyFIPS = self.make_poi_to_county_code_dict()
+        self.poi_info = self.get_poi_info()
         self.census = self.make_census_dict()
-
-    def make_poi_to_countyFIPS_dict(self):
-        df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, 
+    
+    def get_poi_info(self):
+        # get county code for each poi
+        county_df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, 
                             usecols=['safegraph_place_id', 'countyFIPS'], 
                             dtype={'countyFIPS': str}
             )
-        df = df.dropna().set_index('safegraph_place_id')
+        county_df = df.dropna().set_index('safegraph_place_id')
 
-        return df['countyFIPS'].to_dict()
+        # get top level category for each poi 
+        cat_df = pd.DataFrame()
+        for f in os.listdir(constants.CORE_POI_PATH):
+            if f.starts_with(constants.CORE_POI_CSV_PREFIX):
+                f = os.path.join(constants.CORE_POI_PATH, f)
+                temp_df = pd.read_csv(f, usecols=['safegraph_place_id', 'top_category'])
+                temp_df = temp_df.dropna().set_index('safegraph_place_id')
+
+                assert len(cat_df.index.intersection(temp_df.index)) == 0
+                cat_df = pd.concat([cat_df, temp_df], axis='index')
+
+        final_df = pd.concat([county_df, cat_df], axis='columns')
+
+        return final_df.to_dict(orient='index')
 
     def make_census_dict(self):
         if __name__ == '__main__':
@@ -72,7 +85,6 @@ class BaseCountyDataset(Dataset, ABC):
         )
 
         return pd.concat([grouped.raw_visit_counts.sum(), grouped.visits_by_day.apply(np.sum)], axis=1)
-
 
     @abstractmethod
     def __len__(self):
