@@ -17,7 +17,6 @@ class BaseCountyDataset(Dataset, ABC):
         df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, 
                             usecols=['safegraph_place_id', 'countyFIPS'], 
                             dtype={'countyFIPS': str}
-                        )
             )
         df = df.dropna().set_index('safegraph_place_id')
 
