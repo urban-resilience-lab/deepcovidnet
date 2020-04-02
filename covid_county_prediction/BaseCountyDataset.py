@@ -76,11 +76,11 @@ class BaseCountyDataset(Dataset, ABC):
             df.drop(labels=['date_range_start', 'date_range_end'], axis='columns', inplace=True)
 
         #start_time and end_time can be processed based on model here
-        
+
         grouped = df.groupby(
             lambda sg_id : 
-                self.poi_to_countyFIPS[sg_id] 
-                    if sg_id in self.poi_to_countyFIPS
+                self.poi_info[sg_id]['countyFIPS']
+                    if sg_id in self.poi_info and self.poi_info[sg_id]['countyFIPS']
                     else '00000'
         )
 
