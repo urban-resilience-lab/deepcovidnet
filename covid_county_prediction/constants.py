@@ -23,3 +23,4 @@ DATA_BASE_DIR = os.path.join(
 
 ### BaseCountyDataset
 PLACE_COUNTY_CBG_FILE = os.path.join(DATA_BASE_DIR, 'placeCountyCBG.csv')
+PATH_TO_SAFEGRAPH_OPEN_CENSUS_DATA = os.path.join(DATA_BASE_DIR, "safegraph_open_census_data/data/")
