@@ -5,6 +5,8 @@ import pandas as pd
 import covid_county_prediction.constants as constants
 import numpy as np
 import re
+import os
+import string
 
 class BaseCountyDataset(Dataset, ABC):
     def __init__(self):
@@ -18,12 +20,12 @@ class BaseCountyDataset(Dataset, ABC):
                             usecols=['safegraph_place_id', 'countyFIPS'], 
                             dtype={'countyFIPS': str}
             )
-        county_df = df.dropna().set_index('safegraph_place_id')
+        county_df = county_df.dropna().set_index('safegraph_place_id')
 
         # get top level category for each poi 
         cat_df = pd.DataFrame()
         for f in os.listdir(constants.CORE_POI_PATH):
-            if f.starts_with(constants.CORE_POI_CSV_PREFIX):
+            if f.startswith(constants.CORE_POI_CSV_PREFIX):
                 f = os.path.join(constants.CORE_POI_PATH, f)
                 temp_df = pd.read_csv(f, usecols=['safegraph_place_id', 'top_category'])
                 temp_df = temp_df.dropna().set_index('safegraph_place_id')
@@ -65,8 +67,8 @@ class BaseCountyDataset(Dataset, ABC):
                         # how long people stayed
                     ],
                 converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))]))}
-            ).set_index('safegraph_place_id')
-
+            )
+       
         if (df['date_range_start'] == df.iloc[0]['date_range_start']).all() and \
             (df['date_range_end'] == df.iloc[0]['date_range_end']).all():  
             
@@ -77,14 +79,44 @@ class BaseCountyDataset(Dataset, ABC):
 
         #start_time and end_time can be processed based on model here
 
-        grouped = df.groupby(
-            lambda sg_id : 
-                self.poi_info[sg_id]['countyFIPS']
-                    if sg_id in self.poi_info and self.poi_info[sg_id]['countyFIPS']
-                    else '00000'
+        df['countyFIPS'] = df['safegraph_place_id'].apply(
+            lambda x : self.poi_info[x]['countyFIPS'] 
+                        if x in self.poi_info and self.poi_info[x]['countyFIPS'] 
+                        else '00000'
         )
 
-        return pd.concat([grouped.raw_visit_counts.sum(), grouped.visits_by_day.apply(np.sum)], axis=1)
+        df['top_category'] = df['safegraph_place_id'].apply(
+            lambda x : self.poi_info[x]['top_category'] 
+                        if x in self.poi_info and self.poi_info[x]['top_category'] 
+                        else 'Unknown'
+        )
+
+        top_cats = set()
+        for k in self.poi_info:
+            if type(self.poi_info[k]['top_category']) == type(''):
+                top_cats.add(self.poi_info[k]['top_category'])
+
+        num_days = len(df.iloc[0]['visits_by_day'])
+
+        for cat in top_cats:
+            colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
+            df[colname + '_count'] = df.apply(
+                lambda row : row.raw_visit_counts if cat == row.top_category else 0,
+                axis = 1
+            )
+            df[colname + '_daywise'] = df.apply(
+                lambda row : row.visits_by_day if cat == row.top_category else np.zeros(num_days, dtype=int),
+                axis = 1
+            )
+
+        grouped = df.groupby('countyFIPS')
+
+        new_df = []
+        for c in df.columns:
+            if c not in ['safegraph_place_id', 'countyFIPS', 'top_category']:
+                new_df.append(grouped[c].apply(np.sum))
+
+        return pd.concat(new_df, axis=1)
 
     @abstractmethod
     def __len__(self):
