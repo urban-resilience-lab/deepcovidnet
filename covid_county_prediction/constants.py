@@ -20,7 +20,9 @@ MODELS_BASE_DIR = os.path.join(
 DATA_BASE_DIR = os.path.join(
     Path(os.path.dirname(os.path.abspath(__file__))).parent, 'data')
 
-
 ### BaseCountyDataset
 PLACE_COUNTY_CBG_FILE = os.path.join(DATA_BASE_DIR, 'placeCountyCBG.csv')
 PATH_TO_SAFEGRAPH_OPEN_CENSUS_DATA = os.path.join(DATA_BASE_DIR, "safegraph_open_census_data/data/")
+
+CORE_POI_PATH = os.path.join(DATA_BASE_DIR, 'CoreRecords-CORE_POI-2019_03-2020-03-25')
+CORE_POI_CSV_PREFIX = 'core_poi-part'
