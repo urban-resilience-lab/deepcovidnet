@@ -13,7 +13,7 @@ class BaseCountyDataset(Dataset, ABC):
         # load all required data here
         self.poi_info = self.get_poi_info()
         self.census = self.make_census_dict()
-    
+
     def get_poi_info(self):
         # get county code for each poi
         county_df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, 
@@ -117,6 +117,43 @@ class BaseCountyDataset(Dataset, ABC):
                 new_df.append(grouped[c].apply(np.sum))
 
         return pd.concat(new_df, axis=1)
+
+    def read_countywise_weather(self, start_date, end_date):
+        pass
+
+    def read_sg_social_distancing(self, csv_file):
+        df = pd.read_csv(csv_file, 
+                usecols=[
+                        'origin_census_block_group', 
+                        'date_range_start', 
+                        'date_range_end', 
+                        'device_count',
+                        'distance_traveled_from_home',
+                        'completely_home_device_count',
+                        'median_home_dwell_time',
+                        'part_time_work_behavior_devices',
+                        'full_time_work_behavior_devices'
+                    ],
+                dtype={'origin_census_block_group': str}
+            ).set_index('origin_census_block_group')
+
+        #prepare for weighted average
+        df['distance_traveled_from_home']   *= df['device_count']
+        df['median_home_dwell_time']        *= df['device_count']
+        
+        #handle start/end dates as per model
+        
+        df = df.groupby(lambda cbg : str(cbg)[:5]).sum()
+
+        df['completely_home_device_count']    /= df['device_count']
+        df['part_time_work_behavior_devices'] /= df['device_count']
+        df['full_time_work_behavior_devices'] /= df['device_count']
+        df['distance_traveled_from_home']     /= df['device_count']
+        df['median_home_dwell_time']          /= df['device_count']
+
+        df = df.drop(['device_count'], axis=1)
+
+        return df
 
     @abstractmethod
     def __len__(self):
