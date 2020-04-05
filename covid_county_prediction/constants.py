@@ -9,7 +9,7 @@ EPOCHS                      = 300
 PRINT_FREQ                  = 20
 INTERMITTENT_OUTPUT_FREQ    = 5 # Num batches between outputs
 
-BATCH_SIZE              = 64
+BATCH_SIZE                  = 64
 
 MIN_LEARNING_RATE           = 0.000001
 
@@ -26,3 +26,4 @@ PATH_TO_SAFEGRAPH_OPEN_CENSUS_DATA = os.path.join(DATA_BASE_DIR, "safegraph_open
 
 CORE_POI_PATH = os.path.join(DATA_BASE_DIR, 'CoreRecords-CORE_POI-2019_03-2020-03-25')
 CORE_POI_CSV_PREFIX = 'core_poi-part'
+LABELS_CSV_PATH = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'

@@ -7,12 +7,14 @@ import numpy as np
 import re
 import os
 import string
+from datetime import date
+
+### TODO: FIX TIMEZONES
 
 class BaseCountyDataset(Dataset, ABC):
     def __init__(self):
         # load all required data here
         self.poi_info = self.get_poi_info()
-        self.census = self.make_census_dict()
 
     def get_poi_info(self):
         # get county code for each poi
@@ -155,6 +157,24 @@ class BaseCountyDataset(Dataset, ABC):
 
         return df
 
+    def read_num_cases(self, start_date: date, end_date: date):
+        # Returns the total new cases found between start_date + 1 and end_date
+        df = pd.read_csv(constants.LABELS_CSV_PATH, usecols=[
+                'date', 'fips', 'cases'
+            ], dtype={'fips': str}).dropna().set_index('fips')
+
+        start_date  = start_date.strftime('%Y-%m-%d')
+        end_date    = end_date.strftime('%Y-%m-%d')
+
+        df_start = df[df['date'] == start_date].drop(['date'], axis=1)
+        df_end   = df[df['date'] == end_date].drop(['date'], axis=1)
+
+        df = df_start.merge(df_end, how='inner', left_index=True, right_index=True, suffixes=('_start', '_end'))
+        df['new_cases'] = df['cases_end'] - df['cases_start']
+        df.drop(['cases_end', 'cases_start'], axis=1, inplace=True)
+
+        return df
+    
     @abstractmethod
     def __len__(self):
         raise NotImplementedError()
