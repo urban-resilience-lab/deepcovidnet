@@ -1,13 +1,6 @@
 import torch, os, matplotlib
 import numpy as np
 from collections import defaultdict
-import covid_county_prediction.constants as constants
-
-PLOT_FLAG_MAP = {
-    'continuous': '-',
-    'discrete': 'o'
-}
-POINT_FLIP_THRESHOLD = 10000
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
