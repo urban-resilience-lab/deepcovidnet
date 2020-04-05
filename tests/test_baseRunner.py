@@ -1,7 +1,6 @@
 import covid_county_prediction.BaseRunner as BaseRunner
 import torchvision.models as models
 import torch.nn as nn
-import covid_county_prediction.constants as constants
 import torch
 import torchvision.datasets as datasets
 import torch.utils.data as data
@@ -13,7 +12,7 @@ class TestBaseRunner(BaseRunner.BaseRunner):
         should_minimize_best_metric = False, debug = True):
         super(TestBaseRunner, self).__init__(models, loss_fn, optimizers, 
             best_metric_name, should_minimize_best_metric, debug)
-    
+
     def train_batch_and_get_metrics(self, batch):
        out = self.nets[0](batch[0])
        loss = self.loss_fn(out, batch[1])       

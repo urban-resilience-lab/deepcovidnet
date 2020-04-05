@@ -2,7 +2,7 @@ from torch.utils.data import Dataset
 from abc import ABC, abstractmethod
 import glob
 import pandas as pd
-import covid_county_prediction.constants as constants
+import covid_county_prediction.config.BaseCountyDatasetConfig as config
 import numpy as np
 import re
 import os
@@ -18,7 +18,7 @@ class BaseCountyDataset(Dataset, ABC):
 
     def get_poi_info(self):
         # get county code for each poi
-        county_df = pd.read_csv(constants.PLACE_COUNTY_CBG_FILE, 
+        county_df = pd.read_csv(config.place_county_cbg_file, 
                             usecols=['safegraph_place_id', 'countyFIPS'], 
                             dtype={'countyFIPS': str}
             )
@@ -26,9 +26,9 @@ class BaseCountyDataset(Dataset, ABC):
 
         # get top level category for each poi 
         cat_df = pd.DataFrame()
-        for f in os.listdir(constants.CORE_POI_PATH):
-            if f.startswith(constants.CORE_POI_CSV_PREFIX):
-                f = os.path.join(constants.CORE_POI_PATH, f)
+        for f in os.listdir(config.core_poi_path):
+            if f.startswith(config.core_poi_csv_prefix):
+                f = os.path.join(config.core_poi_path, f)
                 temp_df = pd.read_csv(f, usecols=['safegraph_place_id', 'top_category'])
                 temp_df = temp_df.dropna().set_index('safegraph_place_id')
 
@@ -42,7 +42,7 @@ class BaseCountyDataset(Dataset, ABC):
     def make_census_dict(self):
         if __name__ == '__main__':
             main_df = pd.DataFrame()
-            for file in glob.glob(constants.PATH_TO_SAFEGRAPH_OPEN_CENSUS_DATA + "cbg_*.csv"):
+            for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
                 df = pd.read_csv(file, converters={
                     'census_block_group': lambda x: str(x)})  # The converter is used to retain leading zeros
 
@@ -56,8 +56,11 @@ class BaseCountyDataset(Dataset, ABC):
                 df = df.groupby("FIPS").sum()
                 main_df = main_df.join(df, how="outer")
             return main_df.to_dict()
-    
-    def read_sg_patterns(self, csv_file):
+
+    def read_sg_patterns_monthly(self, start_date, end_date):
+        pass
+
+    def read_sg_patterns_monthly_file(self, csv_file):
         df = pd.read_csv(csv_file, 
                 usecols=[
                         'safegraph_place_id', 
@@ -159,7 +162,7 @@ class BaseCountyDataset(Dataset, ABC):
 
     def read_num_cases(self, start_date: date, end_date: date):
         # Returns the total new cases found between start_date + 1 and end_date
-        df = pd.read_csv(constants.LABELS_CSV_PATH, usecols=[
+        df = pd.read_csv(config.labels_csv_path, usecols=[
                 'date', 'fips', 'cases'
             ], dtype={'fips': str}).dropna().set_index('fips')
 
@@ -174,7 +177,7 @@ class BaseCountyDataset(Dataset, ABC):
         df.drop(['cases_end', 'cases_start'], axis=1, inplace=True)
 
         return df
-    
+
     @abstractmethod
     def __len__(self):
         raise NotImplementedError()

@@ -5,14 +5,11 @@ from abc import abstractmethod, ABCMeta
 import tensorboardX
 import covid_county_prediction.utils as utils
 import time
-import covid_county_prediction.constants as constants
+import covid_county_prediction.config.BaseRunnerConfig as config
 import os
 from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
 import warnings
-
-LR_DECAY_STEP_SIZE  = 10
-LR_DECAY_FACTOR     = 0.9
 
 class BaseRunner(metaclass=ABCMeta):
     #inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
@@ -23,7 +20,7 @@ class BaseRunner(metaclass=ABCMeta):
         assert type(models) == type([]), 'models must be a list'
         assert type(optimizers) == type([]), 'optimizers must be a list'
 
-        self.writer = tensorboardX.SummaryWriter(constants.TENSORBOARDX_BASE_DIR)
+        self.writer = tensorboardX.SummaryWriter(config.tensorboardx_base_dir)
         self.nets   = models
         self.name   = self.__class__.__name__
         self.debug  = debug
@@ -37,7 +34,7 @@ class BaseRunner(metaclass=ABCMeta):
         self.model_code = model_code
         self.keys_for_gpu = None
         self.lr_schedulers = \
-            [lr_scheduler.StepLR(optimizers[i], LR_DECAY_STEP_SIZE, LR_DECAY_FACTOR) 
+            [lr_scheduler.StepLR(optimizers[i], config.lr_decay_step_size, config.lr_decay_factor) 
                 for i in range(len(self.optimizers))]
         self.global_step = 0
         
@@ -50,7 +47,7 @@ class BaseRunner(metaclass=ABCMeta):
                 self.nets[i] = self.nets[i].cuda()
 
             loss_fn = loss_fn.cuda()
-  
+
     def load_model(self, model, path):
         d = torch.load(path)
         try:
@@ -72,7 +69,7 @@ class BaseRunner(metaclass=ABCMeta):
                 if param_val.grad is not None:
                     param_distribution_tag = f'{net.__class__.__name__}/{name_prefix}/{param_name}'
                     self.writer.add_histogram(param_distribution_tag, param_val)
-    
+
     def output_gradient_distributions(self, global_step, name_prefix="training_gradients"):
         if not self.introspect:
             return
@@ -82,7 +79,7 @@ class BaseRunner(metaclass=ABCMeta):
                 if param.grad is not None:
                     param_distribution_tag = f'{net.__class__.__name__}/{name_prefix}/{param_name}'
                     self.writer.add_histogram(param_distribution_tag, param.grad, global_step=global_step)
-    
+
     def output_gradient_norms(self, global_step, name_prefix="training_gradient_norms"):
         if not self.introspect:
             return
@@ -92,7 +89,7 @@ class BaseRunner(metaclass=ABCMeta):
                 if param.grad is not None:
                     param_distribution_tag = f'{net.__class__.__name__}/{name_prefix}/{param_name}'
                     self.writer.add_scalar(param_distribution_tag, torch.norm(param.grad), global_step=global_step)
-    
+
     def output_weight_norms(self, global_step, name_prefix="training_weight_norms"):
         if not self.introspect:
             return
@@ -157,7 +154,7 @@ class BaseRunner(metaclass=ABCMeta):
             batch_time_meter.update(time.time() - start_time)
             start_time = time.time()
 
-            if i % constants.PRINT_FREQ == 0:
+            if i % config.print_freq == 0:
                 progress.display(i, epoch)
 
     def train(self, train_loader, epochs, val_loader = None, validate_on_train=False):
@@ -183,27 +180,27 @@ class BaseRunner(metaclass=ABCMeta):
                             'state_dict': self.nets[i].state_dict(),
                             'best_metric_val': self.best_meter.avg,
                             'best_metric_name': self.best_metric_name
-                            }, os.path.join(constants.MODELS_BASE_DIR,
+                            }, os.path.join(config.models_base_dir,
                                 self.nets[i].__class__.__name__ + self.model_code + '_' + \
                                 'checkpoint_' + str(epoch + 1) + '.pth')
                         )
                         self.best_metric_val = self.best_meter.avg
                 self.best_meter.reset()
-            elif epoch % constants.SAVE_FREQ == 0:
+            elif epoch % config.save_freq == 0:
 	                for i in range(len(self.nets)):
 	                    torch.save({
 	                        'arch': self.nets[i].__class__.__name__ + self.model_code,
 	                        'state_dict': self.nets[i].state_dict(),
 	                        'best_metric_val': self.best_meter.avg,
 	                        'best_metric_name': self.best_metric_name
-	                        }, os.path.join(constants.MODELS_BASE_DIR,
+	                        }, os.path.join(config.models_base_dir,
 	                            self.nets[i].__class__.__name__ + self.model_code + '_' + \
 	                            'checkpoint_' + str(epoch + 1) + '.pth')
 	                    )
 
         for i in range(len(self.lr_schedulers)):
             if(min(self.lr_schedulers[i].get_lr()) >=\
-                constants.MIN_LEARNING_RATE):
+                config.min_learning_rate):
                     self.lr_schedulers[i].step()
 
         self.output_weight_distribution("final_weights")
@@ -223,7 +220,7 @@ class BaseRunner(metaclass=ABCMeta):
 
     def train_batch_and_track_metrics(self, batch):
         return self.get_metrics_and_track_best(batch, self.train_batch_and_get_metrics)
-    
+
     def get_metrics_and_track_best(self, batch, metrics_calc):
         metrics = metrics_calc(batch)
         did_find_name = False
@@ -259,4 +256,3 @@ class BaseRunner(metaclass=ABCMeta):
            
             Return: metrics - [(metric_name, metric_val (should be scalar))]'''
         return
-
