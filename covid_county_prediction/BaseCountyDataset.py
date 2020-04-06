@@ -8,7 +8,7 @@ import re
 import os
 import string
 from datetime import date
-
+import requests
 
 ### TODO: FIX TIMEZONES
 
@@ -170,6 +170,23 @@ class BaseCountyDataset(Dataset, ABC):
         df.drop(['cases_end', 'cases_start'], axis=1, inplace=True)
 
         return df
+
+    def get_weather_from_fips(self, fips, start_date, end_date):
+        mins = []
+        maxs = []
+        response = requests.get(
+            "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
+                str(fips), str(start_date), str(end_date)),
+            headers={"token": os.environ.get("WEATHER_TOKEN")})
+        data = response.json()
+        for result in data.get('results'):
+            datatype = result.get('datatype')
+            if datatype == "TMIN":
+                mins.append(result.get('value'))
+            if datatype == "TMAX":
+                maxs.append(result.get('value'))
+        return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
+
 
     @abstractmethod
     def __len__(self):
