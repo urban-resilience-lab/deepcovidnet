@@ -10,6 +10,7 @@ import string
 from datetime import date
 import requests
 
+
 ### TODO: FIX TIMEZONES
 
 class BaseCountyDataset(Dataset, ABC):
@@ -116,8 +117,28 @@ class BaseCountyDataset(Dataset, ABC):
 
         return pd.concat(new_df, axis=1)
 
-    def read_countywise_weather(self, start_date, end_date):
-        pass
+    def get_weather_from_fips(self, fips, start_date, end_date):
+        """
+        Get weather from NOAA using FIPS code (gets all relevant reportings from stations in that county)
+        :param fips: Five digit FIPS code (str)
+        :param start_date: start date in the form YYYY-MM-DD
+        :param end_date: end date in the form YYYY-MM-DD
+        :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
+        """
+        mins = []
+        maxs = []
+        response = requests.get(
+            "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
+                str(fips), str(start_date), str(end_date)),
+            headers={"token": os.environ.get("WEATHER_TOKEN")})
+        data = response.json()
+        for result in data.get('results'):
+            datatype = result.get('datatype')
+            if datatype == "TMIN":
+                mins.append(result.get('value'))
+            if datatype == "TMAX":
+                maxs.append(result.get('value'))
+        return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
 
     def read_sg_social_distancing(self, csv_file):
         df = pd.read_csv(csv_file,
@@ -170,23 +191,6 @@ class BaseCountyDataset(Dataset, ABC):
         df.drop(['cases_end', 'cases_start'], axis=1, inplace=True)
 
         return df
-
-    def get_weather_from_fips(self, fips, start_date, end_date):
-        mins = []
-        maxs = []
-        response = requests.get(
-            "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
-                str(fips), str(start_date), str(end_date)),
-            headers={"token": os.environ.get("WEATHER_TOKEN")})
-        data = response.json()
-        for result in data.get('results'):
-            datatype = result.get('datatype')
-            if datatype == "TMIN":
-                mins.append(result.get('value'))
-            if datatype == "TMAX":
-                maxs.append(result.get('value'))
-        return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
-
 
     @abstractmethod
     def __len__(self):
