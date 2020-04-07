@@ -58,70 +58,82 @@ class BaseCountyDataset(Dataset, ABC):
             return main_df.to_dict()
 
     def read_sg_patterns_monthly(self, start_date, end_date):
-        pass
+        files = config.sg_patterns_monthly_reader.get_files_between(start_date, end_date)
 
-    def read_sg_patterns_monthly_file(self, csv_file):
-        df = pd.read_csv(csv_file, 
-                usecols=[
-                        'safegraph_place_id', 
-                        'date_range_start', 
-                        'date_range_end', 
-                        'raw_visit_counts',
-                        'visits_by_day'
-                        # bucketed_dwell_times may be useful to see
-                        # how long people stayed
-                    ],
-                converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))]))}
+        main_df = pd.DataFrame()
+
+        for csv_file, month_start, month_end in files:
+
+            index_start = month_start.day - 1
+            index_end   = month_end.day - 1
+
+            df = pd.read_csv(csv_file, 
+                    usecols=[
+                            'safegraph_place_id', 
+                            'raw_visit_counts',
+                            'visits_by_day'
+                            # bucketed_dwell_times may be useful to see
+                            # how long people stayed
+                        ],
+                    converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))])[index_start:index_end])}
             )
-       
-        if (df['date_range_start'] == df.iloc[0]['date_range_start']).all() and \
-            (df['date_range_end'] == df.iloc[0]['date_range_end']).all():  
+
+            decomposed_visits_df = pd.DataFrame(
+                df['visits_by_day'].values.tolist(), 
+                columns=['visits_day_' + str(month_start.month).zfill(2) + '_' + str(i).zfill(2) for i in range(month_start.day, month_end.day)]
+            )
+
+            for c in decomposed_visits_df.columns:
+                df[c] = decomposed_visits_df[c]
+
+            df = df.drop(['visits_by_day'], axis=1)
+
+            df['countyFIPS'] = df['safegraph_place_id'].apply(
+                lambda x : self.poi_info[x]['countyFIPS'] 
+                            if x in self.poi_info and self.poi_info[x]['countyFIPS'] 
+                            else '00000'
+            )
+
+            df['top_category'] = df['safegraph_place_id'].apply(
+                lambda x : self.poi_info[x]['top_category'] 
+                            if x in self.poi_info and self.poi_info[x]['top_category'] 
+                            else 'Unknown'
+            )
+
+            top_cats = set()
+            for k in self.poi_info:
+                if type(self.poi_info[k]['top_category']) == type(''):
+                    top_cats.add(self.poi_info[k]['top_category'])
+
+            for cat in top_cats:
+                colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
+                df[colname + '_count'] = df.apply(
+                    lambda row : row['raw_visit_counts'] if cat == row['top_category'] else 0,
+                    axis = 1
+                )
+                for i in range(month_start.day, month_end.day):
+                    suffix = '_visits_day_' + str(month_start.month).zfill(2) + '_' + str(i).zfill(2) 
+                    df[colname + suffix] = df.apply(
+                        lambda row : row[suffix[1:]] if cat == row['top_category'] else 0,
+                        axis = 1
+                    )
+
+            df = df.groupby('countyFIPS').sum()
+
+            common_cols = main_df.columns.intersection(df.columns)
+
+            main_df = df.merge(main_df, how='outer', suffixes=('_l', '_r'), 
+                left_index=True, right_index=True)
             
-            start_time = df.iloc[0]['date_range_start']
-            end_time   = df.iloc[0]['date_range_end']
+            cols_to_remove = []
+            for c in common_cols:
+                main_df[c] = main_df[c + '_l'].add(main_df[c + '_r'], fill_value=0)
+                cols_to_remove.append(c + '_l')
+                cols_to_remove.append(c + '_r')
 
-            df.drop(labels=['date_range_start', 'date_range_end'], axis='columns', inplace=True)
+            main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        #start_time and end_time can be processed based on model here
-
-        df['countyFIPS'] = df['safegraph_place_id'].apply(
-            lambda x : self.poi_info[x]['countyFIPS'] 
-                        if x in self.poi_info and self.poi_info[x]['countyFIPS'] 
-                        else '00000'
-        )
-
-        df['top_category'] = df['safegraph_place_id'].apply(
-            lambda x : self.poi_info[x]['top_category'] 
-                        if x in self.poi_info and self.poi_info[x]['top_category'] 
-                        else 'Unknown'
-        )
-
-        top_cats = set()
-        for k in self.poi_info:
-            if type(self.poi_info[k]['top_category']) == type(''):
-                top_cats.add(self.poi_info[k]['top_category'])
-
-        num_days = len(df.iloc[0]['visits_by_day'])
-
-        for cat in top_cats:
-            colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
-            df[colname + '_count'] = df.apply(
-                lambda row : row.raw_visit_counts if cat == row.top_category else 0,
-                axis = 1
-            )
-            df[colname + '_daywise'] = df.apply(
-                lambda row : row.visits_by_day if cat == row.top_category else np.zeros(num_days, dtype=int),
-                axis = 1
-            )
-
-        grouped = df.groupby('countyFIPS')
-
-        new_df = []
-        for c in df.columns:
-            if c not in ['safegraph_place_id', 'countyFIPS', 'top_category']:
-                new_df.append(grouped[c].apply(np.sum))
-
-        return pd.concat(new_df, axis=1)
+        return main_df
 
     def read_countywise_weather(self, start_date, end_date):
         pass
@@ -139,16 +151,15 @@ class BaseCountyDataset(Dataset, ABC):
                         'part_time_work_behavior_devices',
                         'full_time_work_behavior_devices'
                     ],
-                dtype={'origin_census_block_group': str}
-            ).set_index('origin_census_block_group')
+                dtype={'origin_census_block_group': str},
+                converters={'origin_census_block_group': (lambda cbg: cbg[:5])}
+            )
 
         #prepare for weighted average
         df['distance_traveled_from_home']   *= df['device_count']
         df['median_home_dwell_time']        *= df['device_count']
-        
-        #handle start/end dates as per model
-        
-        df = df.groupby(lambda cbg : str(cbg)[:5]).sum()
+
+        df = df.groupby('origin_census_block_group').sum()
 
         df['completely_home_device_count']    /= df['device_count']
         df['part_time_work_behavior_devices'] /= df['device_count']
@@ -161,13 +172,13 @@ class BaseCountyDataset(Dataset, ABC):
         return df
 
     def read_num_cases(self, start_date: date, end_date: date):
-        # Returns the total new cases found between start_date + 1 and end_date
+        # Returns the total new cases found between start_date and end_date - 1
         df = pd.read_csv(config.labels_csv_path, usecols=[
                 'date', 'fips', 'cases'
             ], dtype={'fips': str}).dropna().set_index('fips')
 
-        start_date  = start_date.strftime('%Y-%m-%d')
-        end_date    = end_date.strftime('%Y-%m-%d')
+        start_date  = (start_date - timedelta(days=1)).strftime('%Y-%m-%d')
+        end_date    = (end_date - timedelta(days=1)).strftime('%Y-%m-%d')
 
         df_start = df[df['date'] == start_date].drop(['date'], axis=1)
         df_end   = df[df['date'] == end_date].drop(['date'], axis=1)
