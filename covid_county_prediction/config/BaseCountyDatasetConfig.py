@@ -49,12 +49,11 @@ class ReaderConfig(Config):
                     if f.startswith(self.part_prefix) and f.endswith(self.file_extension):
                         f = os.path.join(file_format, f)
                         files.add(
-                            (f, d, min(end_date, d + self.date_offset - timedelta(1)))
+                            (f, d, min(end_date, d + self.date_offset - timedelta(days=1)))
                         )
             elif os.path.isfile(file_format):
-                f = os.path.join(file_format, f)
                 files.add(
-                    (file_format, d, min(end_date, d + self.date_offset - timedelta(1)))
+                    (file_format, d, min(end_date, d + self.date_offset - timedelta(days=1)))
                 )
 
             d += self.date_offset
@@ -75,7 +74,7 @@ config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeC
 config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
 
 # reader configs
-config.sg_neighorhood_reader =  ReaderConfig(
+config.sg_social_distancing_reader =  ReaderConfig(
                                     file_granularity='daily', 
                                     file_path_format='%Y/%m/%d/%Y-%m-%d-social-distancing.csv',
                                     is_timezone_variable=True

@@ -126,7 +126,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        return main_df
+        return main_df.fillna()
 
     def get_weather_from_fips(self, fips, start_date, end_date):
         """
@@ -151,38 +151,58 @@ class BaseCountyDataset(Dataset, ABC):
                 maxs.append(result.get('value'))
         return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
 
-    def read_sg_social_distancing(self, csv_file):
-        df = pd.read_csv(csv_file, 
-                usecols=[
-                        'origin_census_block_group', 
-                        'date_range_start', 
-                        'date_range_end', 
-                        'device_count',
-                        'distance_traveled_from_home',
-                        'completely_home_device_count',
-                        'median_home_dwell_time',
-                        'part_time_work_behavior_devices',
-                        'full_time_work_behavior_devices'
-                    ],
-                dtype={'origin_census_block_group': str},
-                converters={'origin_census_block_group': (lambda cbg: cbg[:5])}
-            )
+    def read_sg_social_distancing(self, start_date, end_date):
+        main_df = pd.DataFrame()
+        temp = []
 
-        #prepare for weighted average
-        df['distance_traveled_from_home']   *= df['device_count']
-        df['median_home_dwell_time']        *= df['device_count']
+        files = config.sg_social_distancing_reader.get_files_between(start_date, end_date)
 
-        df = df.groupby('origin_census_block_group').sum()
+        for csv_file, cur_date, _ in files:
+            df = pd.read_csv(csv_file, 
+                    usecols=[
+                            'origin_census_block_group', 
+                            'date_range_start', 
+                            'date_range_end', 
+                            'device_count',
+                            'distance_traveled_from_home',
+                            'completely_home_device_count',
+                            'median_home_dwell_time',
+                            'part_time_work_behavior_devices',
+                            'full_time_work_behavior_devices'
+                        ],
+                    dtype={'origin_census_block_group': str},
+                ).set_index('origin_census_block_group')
 
-        df['completely_home_device_count']    /= df['device_count']
-        df['part_time_work_behavior_devices'] /= df['device_count']
-        df['full_time_work_behavior_devices'] /= df['device_count']
-        df['distance_traveled_from_home'] /= df['device_count']
-        df['median_home_dwell_time'] /= df['device_count']
+            cur_suffix = cur_date.strftime('_%Y_%m_%d')
 
-        df = df.drop(['device_count'], axis=1)
+            #prepare for weighted average
+            df['distance_traveled_from_home']   *= df['device_count']
+            df['median_home_dwell_time']        *= df['device_count']
 
-        return df
+            df = df.groupby(lambda cbg : cbg[:5]).sum()
+
+            df['completely_home_device_count']    /= df['device_count']
+            df['part_time_work_behavior_devices'] /= df['device_count']
+            df['full_time_work_behavior_devices'] /= df['device_count']
+            df['distance_traveled_from_home'] /= df['device_count']
+            df['median_home_dwell_time'] /= df['device_count']
+
+            df = df.drop(['device_count'], axis=1)
+
+            temp.append(df)
+
+            new_c = {}
+            for c in df.columns:
+                new_c[c] = c + cur_suffix
+
+            df.rename(columns=new_c, inplace=True)
+
+            main_df = main_df.merge(
+                        df, how='outer', left_index=True, 
+                        right_index=True, suffixes=('','')
+                    )
+
+        return main_df.fillna(0), temp
 
     def read_num_cases(self, start_date: date, end_date: date):
         # Returns the total new cases found between start_date and end_date - 1
