@@ -8,6 +8,7 @@ import re
 import os
 import string
 from datetime import date
+import requests
 
 ### TODO: FIX TIMEZONES
 
@@ -18,10 +19,10 @@ class BaseCountyDataset(Dataset, ABC):
 
     def get_poi_info(self):
         # get county code for each poi
-        county_df = pd.read_csv(config.place_county_cbg_file, 
-                            usecols=['safegraph_place_id', 'countyFIPS'], 
-                            dtype={'countyFIPS': str}
-            )
+        county_df = pd.read_csv(config.place_county_cbg_file,
+                                usecols=['safegraph_place_id', 'countyFIPS'],
+                                dtype={'countyFIPS': str}
+                                )
         county_df = county_df.dropna().set_index('safegraph_place_id')
 
         # get top level category for each poi 
@@ -40,22 +41,14 @@ class BaseCountyDataset(Dataset, ABC):
         return final_df.to_dict(orient='index')
 
     def make_census_dict(self):
-        if __name__ == '__main__':
-            main_df = pd.DataFrame()
-            for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
-                df = pd.read_csv(file, converters={
-                    'census_block_group': lambda x: str(x)})  # The converter is used to retain leading zeros
-
-                # Convert census block groups to FIPS codes and use as index named FIPS
-                df.index = df['census_block_group'].apply(lambda x: x[:5]).astype(
-                    int)  # Save only first five chars of index
-                df.drop('census_block_group', axis=1, inplace=True)
-                df.index.name = "FIPS"
-
-                # Aggregate data by FIPS codes
-                df = df.groupby("FIPS").sum()
-                main_df = main_df.join(df, how="outer")
-            return main_df.to_dict()
+        dfs = []
+        for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
+            df = pd.read_csv(file, dtype={'census_block_group': str})  # The converter is used to retain leading zeros
+            dfs.append(df)
+        dfs = pd.concat(dfs, axis=1)
+        dfs.index = dfs.iloc[:, 0].str.slice(0, 5).astype(int)
+        dfs = dfs.groupby(dfs.index).sum()
+        return dfs
 
     def read_sg_patterns_monthly(self, start_date, end_date):
         files = config.sg_patterns_monthly_reader.get_files_between(start_date, end_date)
@@ -135,8 +128,28 @@ class BaseCountyDataset(Dataset, ABC):
 
         return main_df
 
-    def read_countywise_weather(self, start_date, end_date):
-        pass
+    def get_weather_from_fips(self, fips, start_date, end_date):
+        """
+        Get weather from NOAA using FIPS code (gets all relevant reportings from stations in that county)
+        :param fips: Five digit FIPS code (str)
+        :param start_date: start date in the form YYYY-MM-DD
+        :param end_date: end date in the form YYYY-MM-DD
+        :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
+        """
+        mins = []
+        maxs = []
+        response = requests.get(
+            "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
+                str(fips), str(start_date), str(end_date)),
+            headers={"token": os.environ.get("WEATHER_TOKEN")})
+        data = response.json()
+        for result in data.get('results'):
+            datatype = result.get('datatype')
+            if datatype == "TMIN":
+                mins.append(result.get('value'))
+            if datatype == "TMAX":
+                maxs.append(result.get('value'))
+        return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
 
     def read_sg_social_distancing(self, csv_file):
         df = pd.read_csv(csv_file, 
@@ -164,8 +177,8 @@ class BaseCountyDataset(Dataset, ABC):
         df['completely_home_device_count']    /= df['device_count']
         df['part_time_work_behavior_devices'] /= df['device_count']
         df['full_time_work_behavior_devices'] /= df['device_count']
-        df['distance_traveled_from_home']     /= df['device_count']
-        df['median_home_dwell_time']          /= df['device_count']
+        df['distance_traveled_from_home'] /= df['device_count']
+        df['median_home_dwell_time'] /= df['device_count']
 
         df = df.drop(['device_count'], axis=1)
 
@@ -174,14 +187,14 @@ class BaseCountyDataset(Dataset, ABC):
     def read_num_cases(self, start_date: date, end_date: date):
         # Returns the total new cases found between start_date and end_date - 1
         df = pd.read_csv(config.labels_csv_path, usecols=[
-                'date', 'fips', 'cases'
-            ], dtype={'fips': str}).dropna().set_index('fips')
+            'date', 'fips', 'cases'
+        ], dtype={'fips': str}).dropna().set_index('fips')
 
         start_date  = (start_date - timedelta(days=1)).strftime('%Y-%m-%d')
         end_date    = (end_date - timedelta(days=1)).strftime('%Y-%m-%d')
 
         df_start = df[df['date'] == start_date].drop(['date'], axis=1)
-        df_end   = df[df['date'] == end_date].drop(['date'], axis=1)
+        df_end = df[df['date'] == end_date].drop(['date'], axis=1)
 
         df = df_start.merge(df_end, how='inner', left_index=True, right_index=True, suffixes=('_start', '_end'))
         df['new_cases'] = df['cases_end'] - df['cases_start']
