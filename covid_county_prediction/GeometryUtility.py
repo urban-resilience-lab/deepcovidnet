@@ -20,7 +20,8 @@ class GeometryUtility(object):
 
     @classmethod
     def get_fips_with_geom(cls):
-        svi = gpd.read_file(config.svi_data_us_county_data_path, usecols=['FIPS', 'geometry'])
+        svi = gpd.read_file(config.svi_data_us_county_data_path)
+        svi = svi[['FIPS', 'geometry']]
         svi = svi[svi.geometry.type == 'Polygon']  # Drop NoneType - empty geometries
         return svi
 
@@ -28,12 +29,12 @@ class GeometryUtility(object):
     def get_poi_labeled_with_fips(cls):
         """
         Get points of interest identifiers labeled with county FIPS code
-        :return:
+        :return: point of information safegraph ID with county FIPS code
         """
         poi_with_geom = cls.get_poi_with_geom()
         fips_with_geom = cls.get_fips_with_geom()
         poi_with_fips = gpd.sjoin(poi_with_geom, fips_with_geom, how='left', op='intersects')
-        return poi_with_fips.drop('geometry', axis=1)
+        return poi_with_fips.drop('geometry', axis=1)[['safegraph_place_id', 'FIPS']]
 
 
 if __name__ == '__main__':
