@@ -7,15 +7,42 @@ import numpy as np
 import re
 import os
 import string
-from datetime import date
+from datetime import date, timedelta
 import requests
-
+from inspect import signature
 ### TODO: FIX TIMEZONES
 
 class BaseCountyDataset(Dataset, ABC):
-    def __init__(self):
+    def __init__(self, d):
         # load all required data here
         self.poi_info = self.get_poi_info()
+        
+        end_date = d
+        start_date = end_date - timedelta(days=config.past_days_to_consider)
+
+        data_readers = [
+            self.read_census_data,
+            self.read_sg_patterns_monthly,
+            self.read_sg_social_distancing,
+            self.read_num_cases,
+        ]
+
+        self.data_df = pd.DataFrame()
+
+        for f in data_readers:
+            if len(signature(f).parameters) == 0:
+                df = f()
+            elif len(signature(f).parameters) == 2:
+                df = f(start_date, end_date)
+            else:
+                raise Exception('Readers can only have 0 or 2 parameters')
+
+            if len(self.data_df) == 0:
+                self.data_df = self.data_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
+            else:
+                self.data_df = self.data_df.merge(df, how='inner', left_index=True, right_index=True, suffixes=('', ''))
+
+        self.labels_df = self.read_num_cases(end_date, end_date + timedelta(days=1))
 
     def get_poi_info(self):
         # get county code for each poi
@@ -40,7 +67,7 @@ class BaseCountyDataset(Dataset, ABC):
 
         return final_df.to_dict(orient='index')
 
-    def make_census_dict(self):
+    def read_census_data(self):
         dfs = []
         for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
             df = pd.read_csv(file, dtype={'census_block_group': str})  # The converter is used to retain leading zeros
@@ -126,7 +153,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        return main_df.fillna()
+        return main_df.fillna(0)
 
     def get_weather_from_fips(self, fips, start_date, end_date):
         """
@@ -153,7 +180,6 @@ class BaseCountyDataset(Dataset, ABC):
 
     def read_sg_social_distancing(self, start_date, end_date):
         main_df = pd.DataFrame()
-        temp = []
 
         files = config.sg_social_distancing_reader.get_files_between(start_date, end_date)
 
@@ -189,8 +215,6 @@ class BaseCountyDataset(Dataset, ABC):
 
             df = df.drop(['device_count'], axis=1)
 
-            temp.append(df)
-
             new_c = {}
             for c in df.columns:
                 new_c[c] = c + cur_suffix
@@ -202,7 +226,7 @@ class BaseCountyDataset(Dataset, ABC):
                         right_index=True, suffixes=('','')
                     )
 
-        return main_df.fillna(0), temp
+        return main_df.fillna(0)
 
     def read_num_cases(self, start_date: date, end_date: date):
         # Returns the total new cases found between start_date and end_date - 1
@@ -210,17 +234,23 @@ class BaseCountyDataset(Dataset, ABC):
             'date', 'fips', 'cases'
         ], dtype={'fips': str}).dropna().set_index('fips')
 
-        start_date  = (start_date - timedelta(days=1)).strftime('%Y-%m-%d')
-        end_date    = (end_date - timedelta(days=1)).strftime('%Y-%m-%d')
+        main_df = pd.DataFrame()
 
-        df_start = df[df['date'] == start_date].drop(['date'], axis=1)
-        df_end = df[df['date'] == end_date].drop(['date'], axis=1)
+        cur_date = start_date
+        while cur_date < end_date:
+            df_yesterday    = df[df['date'] == (cur_date - timedelta(days=1)).strftime('%Y-%m-%d')]
+            df_today        = df[df['date'] == cur_date.strftime('%Y-%m-%d')]
 
-        df = df_start.merge(df_end, how='inner', left_index=True, right_index=True, suffixes=('_start', '_end'))
-        df['new_cases'] = df['cases_end'] - df['cases_start']
-        df.drop(['cases_end', 'cases_start'], axis=1, inplace=True)
+            cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
 
-        return df
+            cur_df['new_cases' + cur_date.strftime('_%Y_%m_%d')] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
+            cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
+
+            main_df = main_df.merge(cur_df, how='outer', left_index=True, right_index=True)
+
+            cur_date += timedelta(days=1)
+
+        return main_df.fillna(0)
 
     @abstractmethod
     def __len__(self):

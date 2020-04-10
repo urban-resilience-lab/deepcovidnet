@@ -88,4 +88,6 @@ config.sg_patterns_monthly_reader = ReaderConfig(
                                         part_prefix='patterns-part'
                                     )
 
+config.past_days_to_consider = 20
+
 sys.modules[__name__] = config
