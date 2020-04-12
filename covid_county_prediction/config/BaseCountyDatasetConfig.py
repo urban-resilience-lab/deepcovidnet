@@ -14,7 +14,7 @@ class ReaderConfig(Config):
         
         super(ReaderConfig, self).__init__('Config for reading data from different mediums')
         
-        assert file_granularity in ['daily', 'monthly']
+        assert file_granularity in ['daily', 'monthly', 'weekly']
         
         self.file_granularity   = file_granularity
 
@@ -22,6 +22,8 @@ class ReaderConfig(Config):
             self.date_offset = timedelta(days=1)
         elif self.file_granularity == 'monthly':
             self.date_offset = offsets.MonthBegin()
+        elif self.file_granularity == 'weekly':
+            self.date_offset = offsets.Week(weekday=6)
 
         self.file_path_format   = file_path_format
 
@@ -33,12 +35,18 @@ class ReaderConfig(Config):
         self.is_timezone_variable = is_timezone_variable
         self.timezone = timezone
 
+    def get_file_date(self, d):
+        if self.file_granularity == 'weekly' and d.weekday() != 6:
+            return d - self.date_offset
+        
+        return d 
+
     def get_files_between(self, start_date: date, end_date: date):
         files = set()
 
         d = start_date
         while d < end_date:
-            file_format = d.strftime(
+            file_format = self.get_file_date(d).strftime(
                 os.path.join(global_config.data_base_dir, self.file_path_format)
             )
 
@@ -48,15 +56,27 @@ class ReaderConfig(Config):
                 for f in os.listdir(file_format):
                     if f.startswith(self.part_prefix) and f.endswith(self.file_extension):
                         f = os.path.join(file_format, f)
+                        
+                        expected_end = d + self.date_offset - timedelta(days=1)
+                        if type(expected_end) != date:
+                            expected_end = expected_end.date() #when it is a timezone
+
                         files.add(
-                            (f, d, min(end_date, d + self.date_offset - timedelta(days=1)))
+                            (f, d, min(end_date, expected_end))
                         )
+                    
             elif os.path.isfile(file_format):
+                expected_end = d + self.date_offset - timedelta(days=1)
+                if type(expected_end) != date:
+                    expected_end = expected_end.date() #when it is a timezone
+                
                 files.add(
-                    (file_format, d, min(end_date, d + self.date_offset - timedelta(days=1)))
+                    (file_format, d, min(end_date, expected_end))
                 )
 
             d += self.date_offset
+            if type(d) != date:
+                d = d.date()
 
         return list(files)
 
@@ -70,8 +90,14 @@ config.sg_open_census_data_path = os.path.join(global_config.data_base_dir, "saf
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')
 
+# county info
+config.county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
+
 # labels
 config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
+
+# past days
+config.past_days_to_consider = 20
 
 # reader configs
 config.sg_social_distancing_reader =  ReaderConfig(
@@ -88,6 +114,10 @@ config.sg_patterns_monthly_reader = ReaderConfig(
                                         part_prefix='patterns-part'
                                     )
 
-config.past_days_to_consider = 20
+config.sg_patterns_weekly_reader = ReaderConfig(
+                                        file_granularity='weekly', 
+                                        file_path_format='%y-%m-%d-weekly-patterns.csv',
+                                        is_timezone_variable=True
+                                    )
 
 sys.modules[__name__] = config
