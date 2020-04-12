@@ -10,39 +10,21 @@ import string
 from datetime import date, timedelta
 import requests
 from inspect import signature
+from enum import Enum, auto
+from covid_county_prediction.RawFeatures import RawFeatures
+import covid_county_prediction.config.RawFeaturesConfig as RawFeaturesConfig
+import covid_county_prediction.config.features_config as features_config
 ### TODO: FIX TIMEZONES
 
 class BaseCountyDataset(Dataset, ABC):
     def __init__(self, d):
         # load all required data here
         self.poi_info = self.get_poi_info()
-        
+
         end_date = d
         start_date = end_date - timedelta(days=config.past_days_to_consider)
 
-        data_readers = [
-            self.read_census_data,
-            self.read_sg_patterns_monthly,
-            self.read_sg_social_distancing,
-            self.read_num_cases,
-        ]
-
-        self.data_df = pd.DataFrame()
-
-        for f in data_readers:
-            if len(signature(f).parameters) == 0:
-                df = f()
-            elif len(signature(f).parameters) == 2:
-                df = f(start_date, end_date)
-            else:
-                raise Exception('Readers can only have 0 or 2 parameters')
-
-            if len(self.data_df) == 0:
-                self.data_df = self.data_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
-            else:
-                self.data_df = self.data_df.merge(df, how='inner', left_index=True, right_index=True, suffixes=('', ''))
-
-        self.labels_df = self.read_num_cases(end_date, end_date + timedelta(days=1))
+        self.labels_df = self.read_num_cases(end_date, end_date + timedelta(days=1), are_labels=True)
 
     def get_poi_info(self):
         # get county code for each poi
@@ -68,12 +50,13 @@ class BaseCountyDataset(Dataset, ABC):
         return final_df.to_dict(orient='index')
 
     def read_census_data(self):
+        # TODO: Rewrite (include metadata info)
         dfs = []
         for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
             df = pd.read_csv(file, dtype={'census_block_group': str})  # The converter is used to retain leading zeros
             dfs.append(df)
         dfs = pd.concat(dfs, axis=1)
-        dfs.index = dfs.iloc[:, 0].str.slice(0, 5).astype(int)
+        dfs.index = dfs.iloc[:, 0].str.slice(0, 5)
         dfs = dfs.groupby(dfs.index).sum()
         return dfs
 
@@ -144,7 +127,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             main_df = df.merge(main_df, how='outer', suffixes=('_l', '_r'), 
                 left_index=True, right_index=True)
-            
+
             cols_to_remove = []
             for c in common_cols:
                 main_df[c] = main_df[c + '_l'].add(main_df[c + '_r'], fill_value=0)
@@ -179,7 +162,7 @@ class BaseCountyDataset(Dataset, ABC):
         return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
 
     def read_sg_social_distancing(self, start_date, end_date):
-        main_df = pd.DataFrame()
+        output_dfs = []
 
         files = config.sg_social_distancing_reader.get_files_between(start_date, end_date)
 
@@ -207,34 +190,25 @@ class BaseCountyDataset(Dataset, ABC):
 
             df = df.groupby(lambda cbg : cbg[:5]).sum()
 
-            df['completely_home_device_count']    /= df['device_count']
-            df['part_time_work_behavior_devices'] /= df['device_count']
-            df['full_time_work_behavior_devices'] /= df['device_count']
-            df['distance_traveled_from_home'] /= df['device_count']
-            df['median_home_dwell_time'] /= df['device_count']
+            df['completely_home_device_count']      /= df['device_count']
+            df['part_time_work_behavior_devices']   /= df['device_count']
+            df['full_time_work_behavior_devices']   /= df['device_count']
+            df['distance_traveled_from_home']       /= df['device_count']
+            df['median_home_dwell_time']            /= df['device_count']
 
             df = df.drop(['device_count'], axis=1)
 
-            new_c = {}
-            for c in df.columns:
-                new_c[c] = c + cur_suffix
+            output_dfs.append(df.dropna())
 
-            df.rename(columns=new_c, inplace=True)
+        return RawFeatures(output_dfs, 'sg_social_distancing', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
-            main_df = main_df.merge(
-                        df, how='outer', left_index=True, 
-                        right_index=True, suffixes=('','')
-                    )
-
-        return main_df.fillna(0)
-
-    def read_num_cases(self, start_date: date, end_date: date):
+    def read_num_cases(self, start_date: date, end_date: date, are_labels = False):
         # Returns the total new cases found between start_date and end_date - 1
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
         ], dtype={'fips': str}).dropna().set_index('fips')
 
-        main_df = pd.DataFrame()
+        output_dfs = []
 
         cur_date = start_date
         while cur_date < end_date:
@@ -243,14 +217,32 @@ class BaseCountyDataset(Dataset, ABC):
 
             cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
 
-            cur_df['new_cases' + cur_date.strftime('_%Y_%m_%d')] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
+            cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
             cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
 
-            main_df = main_df.merge(cur_df, how='outer', left_index=True, right_index=True)
+            output_dfs.append(cur_df.fillna(0))
 
             cur_date += timedelta(days=1)
 
-        return main_df.fillna(0)
+        if are_labels:
+            assert len(output_dfs) == 1
+            return output_dfs[0]            
+        else:
+            return RawFeatures(output_dfs, 'new_cases', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
+
+    def read_sg_mobility_incoming(self, start_date, end_date):
+        pass
+
+    def read_county_distance_from(self, county_fips):
+        # return a DF so its indices are fips codes of other
+        # counties and its only column is the distance from the
+        # given county
+
+        # Sort by indices and ensure that all counties are covered!
+        # total rows = total counties 
+        # process
+        # sort on indices
+        pass
 
     @abstractmethod
     def __len__(self):

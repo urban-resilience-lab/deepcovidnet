@@ -90,9 +90,6 @@ config.sg_open_census_data_path = os.path.join(global_config.data_base_dir, "saf
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')
 
-# county info
-config.county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
-
 # labels
 config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
 
