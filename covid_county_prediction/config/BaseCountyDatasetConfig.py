@@ -57,7 +57,7 @@ class ReaderConfig(Config):
                     if f.startswith(self.part_prefix) and f.endswith(self.file_extension):
                         f = os.path.join(file_format, f)
                         
-                        expected_end = d + self.date_offset - timedelta(days=1)
+                        expected_end = d + self.date_offset
                         if type(expected_end) != date:
                             expected_end = expected_end.date() #when it is a timezone
 
@@ -66,7 +66,7 @@ class ReaderConfig(Config):
                         )
                     
             elif os.path.isfile(file_format):
-                expected_end = d + self.date_offset - timedelta(days=1)
+                expected_end = d + self.date_offset
                 if type(expected_end) != date:
                     expected_end = expected_end.date() #when it is a timezone
                 

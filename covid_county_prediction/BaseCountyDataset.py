@@ -60,6 +60,16 @@ class BaseCountyDataset(Dataset, ABC):
         dfs = dfs.groupby(dfs.index).sum()
         return dfs
 
+    def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
+        ans = []
+        
+        d = cur_start_date
+        while d < cur_end_date:
+            ans.append(prefix + str((d - original_start_date).days))
+            d += timedelta(days=1)
+
+        return ans
+
     def read_sg_patterns_monthly(self, start_date, end_date):
         files = config.sg_patterns_monthly_reader.get_files_between(start_date, end_date)
 
@@ -73,17 +83,16 @@ class BaseCountyDataset(Dataset, ABC):
             df = pd.read_csv(csv_file, 
                     usecols=[
                             'safegraph_place_id', 
-                            'raw_visit_counts',
                             'visits_by_day'
                             # bucketed_dwell_times may be useful to see
                             # how long people stayed
                         ],
                     converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))])[index_start:index_end])}
-            )
+            ) 
 
             decomposed_visits_df = pd.DataFrame(
                 df['visits_by_day'].values.tolist(), 
-                columns=['visits_day_' + str(month_start.month).zfill(2) + '_' + str(i).zfill(2) for i in range(month_start.day, month_end.day)]
+                columns=self.get_names_starting_with(start_date, month_start, month_end, 'visits_day_')
             )
 
             for c in decomposed_visits_df.columns:
@@ -110,12 +119,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             for cat in top_cats:
                 colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
-                df[colname + '_count'] = df.apply(
-                    lambda row : row['raw_visit_counts'] if cat == row['top_category'] else 0,
-                    axis = 1
-                )
-                for i in range(month_start.day, month_end.day):
-                    suffix = '_visits_day_' + str(month_start.month).zfill(2) + '_' + str(i).zfill(2) 
+                for suffix in self.get_names_starting_with(start_date, month_start, month_end, '_visits_day_'):
                     df[colname + suffix] = df.apply(
                         lambda row : row[suffix[1:]] if cat == row['top_category'] else 0,
                         axis = 1
@@ -136,7 +140,15 @@ class BaseCountyDataset(Dataset, ABC):
 
             main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        return main_df.fillna(0)
+        output_dfs = []
+        for col_suffix in self.get_names_starting_with(start_date, start_date, end_date, 'day_'):
+            cols = [c for c in main_df.columns if c.endswith(col_suffix)]
+            renamed_cols = {}
+            for c in cols:
+                renamed_cols[c] = c[:-len(col_suffix)]
+            output_dfs.append(main_df[cols].rename(columns=renamed_cols))
+
+        return RawFeatures(output_dfs, 'sg_patterns_monthly', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
     def get_weather_from_fips(self, fips, start_date, end_date):
         """

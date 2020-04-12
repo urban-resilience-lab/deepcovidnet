@@ -15,9 +15,9 @@ class RawFeatures:
         self.features = self.process_features(raw_features)
 
     def process_features(self, raw_features):
-        return self.get_features_with_index(features_config.county_info.index)
+        return self.get_features_with_index(features_config.county_info.index, raw_features)
 
-    def get_features_with_index(self, index):
+    def get_features_with_index(self, index, raw_features):
         index_df = pd.DataFrame(index=index)
 
         if type(raw_features) == type([]):
@@ -37,4 +37,4 @@ class RawFeatures:
         return index_df.merge(raw_features, how='left', left_index=True, right_index=True, suffixes=('', ''))
 
     def keep_features_with_labels(self, labels_df):
-        return self.get_features_with_index(labels_df.index)
+        return self.get_features_with_index(labels_df.index, self.raw_features)
