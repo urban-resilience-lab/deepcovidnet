@@ -86,6 +86,7 @@ config.core_poi_path = os.path.join(global_config.data_base_dir, 'CoreRecords-CO
 
 # open census
 config.sg_open_census_data_path = os.path.join(global_config.data_base_dir, "safegraph_open_census_data/data/")
+config.sg_open_census_metadata_path = os.path.join(global_config.data_base_dir, "safegraph_open_census_data/metadata/")
 
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')

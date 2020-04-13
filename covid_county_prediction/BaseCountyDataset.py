@@ -50,15 +50,26 @@ class BaseCountyDataset(Dataset, ABC):
         return final_df.to_dict(orient='index')
 
     def read_census_data(self):
-        # TODO: Rewrite (include metadata info)
-        dfs = []
-        for file in glob.glob(config.sg_open_census_data_path + "cbg_*.csv"):
-            df = pd.read_csv(file, dtype={'census_block_group': str})  # The converter is used to retain leading zeros
-            dfs.append(df)
-        dfs = pd.concat(dfs, axis=1)
-        dfs.index = dfs.iloc[:, 0].str.slice(0, 5)
-        dfs = dfs.groupby(dfs.index).sum()
-        return dfs
+        main_df = pd.DataFrame()
+        
+        for f in os.listdir(sg_open_census_data_path):
+            if f.startswith('cbg_b') or f.startswith('cbg_c'):
+                f = os.path.join(config.sg_open_census_data_path, f)
+                df = pd.read_csv(f, dtype={'census_block_group': str})  
+                df['census_block_group'] = df['census_block_group'].apply(lambda x : x[:5])
+                df = df.groupby('census_block_group').sum()
+                main_df = main_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
+
+        f = os.path.join(config.sg_open_census_metadata_path, 'cbg_field_descriptions.csv')
+        meta_df = pd.read_csv(f, usecols=['table_id', 'field_full_name']).set_index('table_id')
+
+        cols_dict = {}
+        for idx in meta_df.index:
+            cols_dict[idx] = meta_df.loc[idx]['field_full_name']
+        
+        main_df = main_df.rename(columns=cols_dict)
+        
+        return RawFeatures(main_df, 'open_census_data', RawFeaturesConfig.feature_type.CONSTANTS)
 
     def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
         ans = []
