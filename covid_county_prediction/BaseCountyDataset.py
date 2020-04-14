@@ -301,7 +301,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             output_dfs.append(mobility_df.fillna(0))
 
-        return output_dfs
+        return RawFeatures(output_dfs, 'mobility_data', type=RawFeaturesConfig.feature_type.COUNTY_WISE_TIME_DEPENDENT)
 
     def read_county_distance_from(self, county_fips):
         # return a DF so its indices are fips codes of other
