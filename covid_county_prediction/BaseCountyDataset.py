@@ -275,11 +275,11 @@ class BaseCountyDataset(Dataset, ABC):
             df = pd.read_csv(csv_file, 
                     usecols=[
                             'safegraph_place_id', 
-                            'visitor_work_cbgs'
+                            'visitor_home_cbgs'
                         ],
                     converters={
                         'safegraph_place_id': (lambda x : self.poi_info[x]['countyFIPS'] if x in self.poi_info else None),
-                        'visitor_work_cbgs' : (lambda x : eval(x))
+                        'visitor_home_cbgs' : (lambda x : eval(x))
                     }
             ).dropna() # remove all rows for which safegraph_place_id does not have a county
 
@@ -287,7 +287,7 @@ class BaseCountyDataset(Dataset, ABC):
                 lambda series : {k: v for d in series for k, v in d.items()}
             ) #merge dictionaries
 
-            df['visitor_work_cbgs'] = df['visitor_work_cbgs'].apply(sum_county_dict)
+            df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
 
             mobility_df = pd.DataFrame(
                 index=feature_config.county_info.index, 
@@ -295,7 +295,7 @@ class BaseCountyDataset(Dataset, ABC):
             )
 
             for to_county in df.index:
-                for from_county, traffic in df['visitor_work_cbgs'].loc[to_county].items():
+                for from_county, traffic in df['visitor_home_cbgs'].loc[to_county].items():
                     if to_county in mobility_df and from_county in mobility_df:
                         mobility_df.loc[to_county].loc[from_county] = traffic
 
