@@ -44,7 +44,8 @@ class BaseCountyDataset(Dataset, ABC):
                 assert len(cat_df.index.intersection(temp_df.index)) == 0
                 cat_df = pd.concat([cat_df, temp_df], axis='index')
 
-        final_df = pd.concat([county_df, cat_df], axis='columns')
+        final_df = pd.concat([county_df, cat_df], axis='columns')       
+        
 
         return final_df.to_dict(orient='index')
 
@@ -67,7 +68,10 @@ class BaseCountyDataset(Dataset, ABC):
             cols_dict[idx] = meta_df.loc[idx]['field_full_name']
         
         main_df = main_df.rename(columns=cols_dict)
-        
+
+        cols_to_remove = [c for c in final_df.columns if 'Margin of Error' in c]
+        main_df.drop(cols_to_remove, axis=1, inplace=True)
+
         return RawFeatures(main_df, 'open_census_data', RawFeaturesConfig.feature_type.CONSTANTS)
 
     def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
