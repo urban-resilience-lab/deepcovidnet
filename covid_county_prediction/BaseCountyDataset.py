@@ -290,8 +290,8 @@ class BaseCountyDataset(Dataset, ABC):
             df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
 
             mobility_df = pd.DataFrame(
-                index=feature_config.county_info.index, 
-                columns=feature_config.county_info.index
+                index=features_config.county_info.index, 
+                columns=features_config.county_info.index
             )
 
             for to_county in df.index:
