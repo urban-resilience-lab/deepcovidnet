@@ -8,7 +8,6 @@ import re
 import os
 import string
 from datetime import date, timedelta
-import requests
 from inspect import signature
 from enum import Enum, auto
 from covid_county_prediction.RawFeatures import RawFeatures
@@ -254,7 +253,51 @@ class BaseCountyDataset(Dataset, ABC):
             return RawFeatures(output_dfs, 'new_cases', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
     def read_sg_mobility_incoming(self, start_date, end_date):
-        pass
+        files = config.sg_patterns_weekly_reader.get_files_between(start_date, end_date)
+
+        def sum_county_dict(d):
+            ans = {}
+            for k, v in d.items():
+                new_k = k[:5]
+                if new_k in ans:
+                    ans[new_k] += v
+                else:
+                    ans[new_k] = v
+            return ans
+        
+        output_dfs = []
+
+        for csv_file, _, _ in files:
+            df = pd.read_csv(csv_file, 
+                    usecols=[
+                            'safegraph_place_id', 
+                            'visitor_work_cbgs'
+                        ],
+                    converters={
+                        'safegraph_place_id': (lambda x : self.poi_info[x]['countyFIPS'] if x in self.poi_info else None),
+                        'visitor_work_cbgs' : (lambda x : eval(x))
+                    }
+            ).dropna() # remove all rows for which safegraph_place_id does not have a county
+
+            df = df.groupby('safegraph_place_id').agg(
+                lambda series : {k: v for d in series for k, v in d.items()}
+            ) #merge dictionaries
+
+            df['visitor_work_cbgs'] = df['visitor_work_cbgs'].apply(sum_county_dict)
+
+            mobility_df = pd.DataFrame(
+                index=feature_config.county_info.index, 
+                columns=feature_config.county_info.index
+            )
+
+            for to_county in df.index:
+                for from_county, traffic in df['visitor_work_cbgs'].loc[to_county].items():
+                    if to_county in mobility_df and from_county in mobility_df:
+                        mobility_df.loc[to_county].loc[from_county] = traffic
+
+            output_df.append(mobility_df.fillna(0))
+
+        return output_dfs
 
     def read_county_distance_from(self, county_fips):
         # return a DF so its indices are fips codes of other
