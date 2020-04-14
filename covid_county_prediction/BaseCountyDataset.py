@@ -299,7 +299,7 @@ class BaseCountyDataset(Dataset, ABC):
                     if to_county in mobility_df and from_county in mobility_df:
                         mobility_df.loc[to_county].loc[from_county] = traffic
 
-            output_df.append(mobility_df.fillna(0))
+            output_dfs.append(mobility_df.fillna(0))
 
         return output_dfs
 
