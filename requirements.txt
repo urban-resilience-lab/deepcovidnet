@@ -2,3 +2,5 @@ pandas
 torch
 torchvision
 numpy
+lxml
+geopandas
