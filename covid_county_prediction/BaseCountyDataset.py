@@ -7,6 +7,7 @@ import numpy as np
 import re
 import os
 import string
+import requests
 from datetime import date, timedelta
 from inspect import signature
 from enum import Enum, auto
@@ -18,7 +19,7 @@ import covid_county_prediction.config.features_config as features_config
 class BaseCountyDataset(Dataset, ABC):
     def __init__(self, d):
         # load all required data here
-        self.poi_info = self.get_poi_info()
+        # self.poi_info = self.get_poi_info()
 
         end_date = d
         start_date = end_date - timedelta(days=config.past_days_to_consider)
@@ -164,7 +165,7 @@ class BaseCountyDataset(Dataset, ABC):
 
         return RawFeatures(output_dfs, 'sg_patterns_monthly', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
-    def get_weather_from_fips(self, fips, start_date, end_date):
+    def get_weather_from_fips(start_date, end_date):
         """
         Get weather from NOAA using FIPS code (gets all relevant reportings from stations in that county)
         :param fips: Five digit FIPS code (str)
@@ -172,20 +173,36 @@ class BaseCountyDataset(Dataset, ABC):
         :param end_date: end date in the form YYYY-MM-DD
         :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
         """
-        mins = []
-        maxs = []
-        response = requests.get(
-            "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
-                str(fips), str(start_date), str(end_date)),
-            headers={"token": os.environ.get("WEATHER_TOKEN")})
-        data = response.json()
-        for result in data.get('results'):
-            datatype = result.get('datatype')
-            if datatype == "TMIN":
-                mins.append(result.get('value'))
-            if datatype == "TMAX":
-                maxs.append(result.get('value'))
-        return {'TMIN': sum(mins) / len(mins), 'TMAX': sum(maxs) / len(maxs)}
+        counties = get_county_info(county_info_link)
+        print(counties.head())
+        print(counties.shape)
+        i = 0
+        for index, row in counties.iterrows():
+            if i > 50:
+                break
+            i = i + 1
+            mins = []
+            maxs = []
+            response = requests.get(
+                "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
+                    str(index), str(start_date), str(end_date)),
+                headers={"token": os.environ.get("WEATHER_TOKEN")})
+            data = response.json()
+            try:
+                for result in data.get('results'):
+                    datatype = result.get('datatype')
+                    if datatype == "TMIN":
+                        mins.append(result.get('value'))
+                    if datatype == "TMAX":
+                        maxs.append(result.get('value'))
+            except TypeError:
+                pass
+            try:
+                counties.at[index, 'Temp Min'] = sum(mins) / len(mins)
+                counties.at[index, 'Temp Max'] = sum(maxs) / len(maxs)
+            except:
+                pass
+        return RawFeatures(counties, 'weather_data', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
     def read_sg_social_distancing(self, start_date, end_date):
         output_dfs = []

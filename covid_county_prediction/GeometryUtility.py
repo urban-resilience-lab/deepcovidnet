@@ -15,7 +15,8 @@ class GeometryUtility(object):
         dfs = pd.concat(dfs)
         gdfs = gpd.GeoDataFrame(dfs, geometry=gpd.points_from_xy(dfs.longitude, dfs.latitude))
         gdfs = gdfs[gdfs.geometry.type == 'Point']  # Drop NoneType - empty geometries
-        gdfs.crs = "epsg:4269"  # Assume North American Datum projection (NAD83) - required for spatial join
+        gdfs.crs = 'epsg:4326'  # This CRS is from the Safegraph sample notebook using the same data
+        gdfs = gdfs.to_crs('epsg:4269')  # Assume North American Datum projection (NAD83) - required for spatial join
         return gdfs
 
     @classmethod
