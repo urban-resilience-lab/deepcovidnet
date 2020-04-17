@@ -24,6 +24,14 @@ class BaseCountyDataset(Dataset, ABC):
         end_date = d
         start_date = end_date - timedelta(days=config.past_days_to_consider)
 
+        self.features = [
+            self.read_census_data(),
+            self.read_sg_patterns_monthly(start_date, end_date),
+            self.read_weather_data(start_date, end_date),
+            self.read_sg_social_distancing(start_date, end_date),
+            self.read_num_cases(start_date, end_date),
+            self.read_sg_mobility_incoming(start_date, end_date)
+        ]
         self.labels_df = self.read_num_cases(end_date, end_date + timedelta(days=1), are_labels=True)
 
     def get_poi_info(self):
@@ -31,7 +39,7 @@ class BaseCountyDataset(Dataset, ABC):
         county_df = pd.read_csv(config.place_county_cbg_file,
                                 usecols=['safegraph_place_id', 'countyFIPS'],
                                 dtype={'countyFIPS': str}
-                                )
+                            )
         county_df = county_df.dropna().set_index('safegraph_place_id')
 
         # get top level category for each poi 
@@ -45,14 +53,13 @@ class BaseCountyDataset(Dataset, ABC):
                 assert len(cat_df.index.intersection(temp_df.index)) == 0
                 cat_df = pd.concat([cat_df, temp_df], axis='index')
 
-        final_df = pd.concat([county_df, cat_df], axis='columns')       
-        
+        final_df = pd.concat([county_df, cat_df], axis='columns')
 
         return final_df.to_dict(orient='index')
 
     def read_census_data(self):
         main_df = pd.DataFrame()
-        
+
         for f in os.listdir(sg_open_census_data_path):
             if f.startswith('cbg_b') or f.startswith('cbg_c'):
                 f = os.path.join(config.sg_open_census_data_path, f)
@@ -67,7 +74,7 @@ class BaseCountyDataset(Dataset, ABC):
         cols_dict = {}
         for idx in meta_df.index:
             cols_dict[idx] = meta_df.loc[idx]['field_full_name']
-        
+
         main_df = main_df.rename(columns=cols_dict)
 
         cols_to_remove = [c for c in final_df.columns if 'Margin of Error' in c]
@@ -77,7 +84,7 @@ class BaseCountyDataset(Dataset, ABC):
 
     def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
         ans = []
-        
+
         d = cur_start_date
         while d < cur_end_date:
             ans.append(prefix + str((d - original_start_date).days))
@@ -165,10 +172,9 @@ class BaseCountyDataset(Dataset, ABC):
 
         return RawFeatures(output_dfs, 'sg_patterns_monthly', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
 
-    def get_weather_from_fips(start_date, end_date):
+    def read_weather_data(start_date, end_date):
         """
         Get weather from NOAA using FIPS code (gets all relevant reportings from stations in that county)
-        :param fips: Five digit FIPS code (str)
         :param start_date: start date in the form YYYY-MM-DD
         :param end_date: end date in the form YYYY-MM-DD
         :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
@@ -320,15 +326,7 @@ class BaseCountyDataset(Dataset, ABC):
 
         return RawFeatures(output_dfs, 'mobility_data', type=RawFeaturesConfig.feature_type.COUNTY_WISE_TIME_DEPENDENT)
 
-    def read_county_distance_from(self, county_fips):
-        # return a DF so its indices are fips codes of other
-        # counties and its only column is the distance from the
-        # given county
-
-        # Sort by indices and ensure that all counties are covered!
-        # total rows = total counties 
-        # process
-        # sort on indices
+    def read_countywise_num_cases(self, start_date, end_date):
         pass
 
     @abstractmethod
