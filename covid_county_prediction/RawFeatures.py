@@ -1,16 +1,14 @@
 import covid_county_prediction.config.RawFeaturesConfig as config
 import covid_county_prediction.config.features_config as features_config
 import pandas as pd
+from abc import ABC, abstractmethod
 
-class RawFeatures:
-    def __init__(self, raw_features, feature_name: str, feature_type: config.feature_type):
+class RawFeatures(ABC):
+    def __init__(self, raw_features, feature_name: str):
         '''
         Args:
-            raw_features: a list of Dataframes for time dependent features
-                        or just a Dataframe for constant features 
+            raw_features: a list of Dataframes or just a Dataframe
         '''
-
-        self.feature_type = feature_type
         self.feature_name = feature_name
         self.features = self.process_features(raw_features)
 
@@ -30,7 +28,6 @@ class RawFeatures:
             if len(ans) > 1:
                 return ans
             else:
-                self.feature_type = config.feature_type.CONSTANTS
                 return ans[0]
 
         # raw_features is a df
@@ -38,3 +35,7 @@ class RawFeatures:
 
     def keep_features_with_labels(self, labels_df):
         return self.get_features_with_index(labels_df.index, self.raw_features)
+
+    @abstractmethod
+    def extract(self):
+        raise NotImplementedError()
