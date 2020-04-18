@@ -1,6 +1,5 @@
 from torch.utils.data import Dataset
 from abc import ABC, abstractmethod
-import glob
 import pandas as pd
 import covid_county_prediction.config.BaseCountyDatasetConfig as config
 import numpy as np
@@ -9,33 +8,19 @@ import os
 import string
 import requests
 from datetime import date, timedelta
-from inspect import signature
-from enum import Enum, auto
-import covid_county_prediction.config.RawFeaturesConfig as RawFeaturesConfig
 import covid_county_prediction.config.features_config as features_config
 
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
-### TODO: FIX TIMEZONES
+
+# TODO: FIX TIMEZONES
+# TODO: DEALING WITH NA VALUES
+
 
 class BaseCountyDataset(Dataset, ABC):
-    def __init__(self, d):
-        # load all required data here
-        # self.poi_info = self.get_poi_info()
-
-        end_date = d
-        start_date = end_date - timedelta(days=config.past_days_to_consider)
-
-        self.features = [
-            self.read_census_data(),
-            self.read_sg_patterns_monthly(start_date, end_date),
-            self.read_weather_data(start_date, end_date),
-            self.read_sg_social_distancing(start_date, end_date),
-            self.read_num_cases(start_date, end_date),
-            self.read_sg_mobility_incoming(start_date, end_date)
-        ]
-        self.labels_df = self.read_num_cases(end_date, end_date + timedelta(days=1), are_labels=True)
+    def __init__(self):
+        self.poi_info = self.get_poi_info() 
 
     def get_poi_info(self):
         # get county code for each poi
@@ -63,10 +48,10 @@ class BaseCountyDataset(Dataset, ABC):
     def read_census_data(self):
         main_df = pd.DataFrame()
 
-        for f in os.listdir(sg_open_census_data_path):
+        for f in os.listdir(config.sg_open_census_data_path):
             if f.startswith('cbg_b') or f.startswith('cbg_c'):
                 f = os.path.join(config.sg_open_census_data_path, f)
-                df = pd.read_csv(f, dtype={'census_block_group': str})  
+                df = pd.read_csv(f, dtype={'census_block_group': str}) 
                 df['census_block_group'] = df['census_block_group'].apply(lambda x : x[:5])
                 df = df.groupby('census_block_group').sum()
                 main_df = main_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
@@ -80,12 +65,12 @@ class BaseCountyDataset(Dataset, ABC):
 
         main_df = main_df.rename(columns=cols_dict)
 
-        cols_to_remove = [c for c in final_df.columns if 'Margin of Error' in c]
+        cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
         main_df.drop(cols_to_remove, axis=1, inplace=True)
 
         return ConstantFeatures(main_df, 'open_census_data')
 
-    def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
+    def _get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
         ans = []
 
         d = cur_start_date
@@ -117,7 +102,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             decomposed_visits_df = pd.DataFrame(
                 df['visits_by_day'].values.tolist(), 
-                columns=self.get_names_starting_with(start_date, month_start, month_end, 'visits_day_')
+                columns=self._get_names_starting_with(start_date, month_start, month_end, 'visits_day_')
             )
 
             for c in decomposed_visits_df.columns:
@@ -144,10 +129,10 @@ class BaseCountyDataset(Dataset, ABC):
 
             for cat in top_cats:
                 colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
-                for suffix in self.get_names_starting_with(start_date, month_start, month_end, '_visits_day_'):
+                for suffix in self._get_names_starting_with(start_date, month_start, month_end, '_visits_day_'):
                     df[colname + suffix] = df.apply(
                         lambda row : row[suffix[1:]] if cat == row['top_category'] else 0,
-                        axis = 1
+                        axis=1
                     )
 
             df = df.groupby('countyFIPS').sum()
@@ -166,7 +151,7 @@ class BaseCountyDataset(Dataset, ABC):
             main_df.drop(cols_to_remove, axis=1, inplace=True)
 
         output_dfs = []
-        for col_suffix in self.get_names_starting_with(start_date, start_date, end_date, 'day_'):
+        for col_suffix in self._get_names_starting_with(start_date, start_date, end_date, 'day_'):
             cols = [c for c in main_df.columns if c.endswith(col_suffix)]
             renamed_cols = {}
             for c in cols:
@@ -182,9 +167,8 @@ class BaseCountyDataset(Dataset, ABC):
         :param end_date: end date in the form YYYY-MM-DD
         :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
         """
-        counties = get_county_info(county_info_link)
-        print(counties.head())
-        print(counties.shape)
+        counties = features_config.county_info
+
         i = 0
         for index, row in counties.iterrows():
             if i > 50:
@@ -234,13 +218,11 @@ class BaseCountyDataset(Dataset, ABC):
                     dtype={'origin_census_block_group': str},
                 ).set_index('origin_census_block_group')
 
-            cur_suffix = cur_date.strftime('_%Y_%m_%d')
-
             #prepare for weighted average
             df['distance_traveled_from_home']   *= df['device_count']
             df['median_home_dwell_time']        *= df['device_count']
 
-            df = df.groupby(lambda cbg : cbg[:5]).sum()
+            df = df.groupby(lambda cbg: cbg[:5]).sum()
 
             df['completely_home_device_count']      /= df['device_count']
             df['part_time_work_behavior_devices']   /= df['device_count']
@@ -254,7 +236,7 @@ class BaseCountyDataset(Dataset, ABC):
 
         return TimeDependentFeatures(output_dfs, 'sg_social_distancing')
 
-    def read_num_cases(self, start_date: date, end_date: date, are_labels = False):
+    def read_num_cases(self, start_date: date, end_date: date, are_labels=False):
         # Returns the total new cases found between start_date and end_date - 1
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
@@ -278,7 +260,7 @@ class BaseCountyDataset(Dataset, ABC):
 
         if are_labels:
             assert len(output_dfs) == 1
-            return output_dfs[0]            
+            return output_dfs[0]         
         else:
             return TimeDependentFeatures(output_dfs, 'new_cases')
 
@@ -294,7 +276,7 @@ class BaseCountyDataset(Dataset, ABC):
                 else:
                     ans[new_k] = v
             return ans
-        
+
         output_dfs = []
 
         for csv_file, _, _ in files:
@@ -307,11 +289,11 @@ class BaseCountyDataset(Dataset, ABC):
                         'safegraph_place_id': (lambda x : self.poi_info[x]['countyFIPS'] if x in self.poi_info else None),
                         'visitor_home_cbgs' : (lambda x : eval(x))
                     }
-            ).dropna() # remove all rows for which safegraph_place_id does not have a county
+            ).dropna()  # remove all rows for which safegraph_place_id does not have a county
 
             df = df.groupby('safegraph_place_id').agg(
                 lambda series : {k: v for d in series for k, v in d.items()}
-            ) #merge dictionaries
+            )  #merge dictionaries
 
             df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
 
