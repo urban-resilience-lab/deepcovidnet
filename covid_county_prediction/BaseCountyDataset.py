@@ -11,9 +11,12 @@ import requests
 from datetime import date, timedelta
 from inspect import signature
 from enum import Enum, auto
-from covid_county_prediction.RawFeatures import RawFeatures
 import covid_county_prediction.config.RawFeaturesConfig as RawFeaturesConfig
 import covid_county_prediction.config.features_config as features_config
+
+from covid_county_prediction.ConstantFeatures import ConstantFeatures
+from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
+from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 ### TODO: FIX TIMEZONES
 
 class BaseCountyDataset(Dataset, ABC):
@@ -80,7 +83,7 @@ class BaseCountyDataset(Dataset, ABC):
         cols_to_remove = [c for c in final_df.columns if 'Margin of Error' in c]
         main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        return RawFeatures(main_df, 'open_census_data', RawFeaturesConfig.feature_type.CONSTANTS)
+        return ConstantFeatures(main_df, 'open_census_data')
 
     def get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
         ans = []
@@ -170,7 +173,7 @@ class BaseCountyDataset(Dataset, ABC):
                 renamed_cols[c] = c[:-len(col_suffix)]
             output_dfs.append(main_df[cols].rename(columns=renamed_cols))
 
-        return RawFeatures(output_dfs, 'sg_patterns_monthly', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
+        return TimeDependentFeatures(output_dfs, 'sg_patterns_monthly')
 
     def read_weather_data(start_date, end_date):
         """
@@ -208,7 +211,7 @@ class BaseCountyDataset(Dataset, ABC):
                 counties.at[index, 'Temp Max'] = sum(maxs) / len(maxs)
             except:
                 pass
-        return RawFeatures(counties, 'weather_data', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
+        return TimeDependentFeatures(counties, 'weather_data')
 
     def read_sg_social_distancing(self, start_date, end_date):
         output_dfs = []
@@ -249,7 +252,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             output_dfs.append(df.dropna())
 
-        return RawFeatures(output_dfs, 'sg_social_distancing', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
+        return TimeDependentFeatures(output_dfs, 'sg_social_distancing')
 
     def read_num_cases(self, start_date: date, end_date: date, are_labels = False):
         # Returns the total new cases found between start_date and end_date - 1
@@ -277,7 +280,7 @@ class BaseCountyDataset(Dataset, ABC):
             assert len(output_dfs) == 1
             return output_dfs[0]            
         else:
-            return RawFeatures(output_dfs, 'new_cases', RawFeaturesConfig.feature_type.TIME_DEPENDENT)
+            return TimeDependentFeatures(output_dfs, 'new_cases')
 
     def read_sg_mobility_incoming(self, start_date, end_date):
         files = config.sg_patterns_weekly_reader.get_files_between(start_date, end_date)
@@ -324,7 +327,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             output_dfs.append(mobility_df.fillna(0))
 
-        return RawFeatures(output_dfs, 'mobility_data', type=RawFeaturesConfig.feature_type.COUNTY_WISE_TIME_DEPENDENT)
+        return CountyWiseTimeDependentFeatures(output_dfs, 'mobility_data')
 
     def read_countywise_num_cases(self, start_date, end_date):
         pass
