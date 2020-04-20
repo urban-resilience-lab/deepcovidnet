@@ -48,13 +48,20 @@ class BaseCountyDataset(Dataset, ABC):
     def read_census_data(self):
         main_df = pd.DataFrame()
 
+        logging.info('Read Census Data...')
         for f in os.listdir(config.sg_open_census_data_path):
             if f.startswith('cbg_b') or f.startswith('cbg_c'):
                 f = os.path.join(config.sg_open_census_data_path, f)
-                df = pd.read_csv(f, dtype={'census_block_group': str}) 
+                df = pd.read_csv(f, dtype={'census_block_grou': str}) 
+                logging.info(f'Successfully read {f}')
+
+                cols_to_remove = [c for c in df.columns if 'Margin of Error' in c]
+                df.drop(cols_to_remove, axis=1, inplace=True)
+
                 df['census_block_group'] = df['census_block_group'].apply(lambda x : x[:5])
                 df = df.groupby('census_block_group').sum()
                 main_df = main_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
+                logging.info('Merged into main dataframe')
 
         f = os.path.join(config.sg_open_census_metadata_path, 'cbg_field_descriptions.csv')
         meta_df = pd.read_csv(f, usecols=['table_id', 'field_full_name']).set_index('table_id')
@@ -64,9 +71,6 @@ class BaseCountyDataset(Dataset, ABC):
             cols_dict[idx] = meta_df.loc[idx]['field_full_name']
 
         main_df = main_df.rename(columns=cols_dict)
-
-        cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
-        main_df.drop(cols_to_remove, axis=1, inplace=True)
 
         return ConstantFeatures(main_df, 'open_census_data')
 
@@ -85,12 +89,13 @@ class BaseCountyDataset(Dataset, ABC):
 
         main_df = pd.DataFrame()
 
+        logging.info('Reading Safegraph Patterns Monthly Data')
+
         for csv_file, month_start, month_end in files:
 
             index_start = month_start.day - 1
             index_end   = (month_end - timedelta(1)).day
 
-            logging.info(f'Reading {csv_file}...')
             df = pd.read_csv(csv_file, 
                     usecols=[
                             'safegraph_place_id', 
@@ -100,6 +105,7 @@ class BaseCountyDataset(Dataset, ABC):
                         ],
                     converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))])[index_start:index_end])}
             )
+            logging.info(f'Successfully read {csv_file}...')
 
             decomposed_visits_df = pd.DataFrame(
                 df['visits_by_day'].values.tolist(), 
