@@ -1,10 +1,13 @@
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from datetime import date
 
+# TODO: Apply Transforms
+
 
 class FeaturesList():
     def __init__(self, features):
         self.features = features
+        self.transforms = None
 
         for i in range(len(self.features)):
             if type(self.features[i]) == CountyWiseTimeDependentFeatures:
@@ -20,8 +23,11 @@ class FeaturesList():
                 break
 
     def extract_torch_tensors(self, county_fips: str, start_date: date, end_date: date):
-        tensors = []
+        tensors = {}
         for i in range(len(self.features)):
-            tensors.append(self.features[i].extract_torch_tensor(county_fips, start_date, end_date))
+            tensors[self.features[i].feature_name + f'_{str(i).zfill(2)}_' + self.features[i].__class__.__name__] = \
+                self.features[i].extract_torch_tensor(
+                    county_fips, start_date, end_date
+                )
 
         return tensors
