@@ -1,6 +1,7 @@
 from covid_county_prediction.RawFeatures import RawFeatures
 from datetime import date, timedelta
 from math import ceil
+import torch
 
 
 class TimeDependentFeatures(RawFeatures):
@@ -13,10 +14,11 @@ class TimeDependentFeatures(RawFeatures):
         start_idx   = int((start_date - self.start_date) / self.interval)
         end_idx     = ceil((end_date - self.start_date) / self.interval)
 
-        tensor = torch.zeros(end_idx - start_idx, self.raw_features.shape[1])
+        tensor = torch.zeros(end_idx - start_idx, self.raw_features[0].shape[1])
 
         for i in range(start_idx, end_idx):
-            if self.raw_features[i].index.contains(county_fips):
-                tensor[i] = self.raw_features[i].loc[county_fips].to_numpy()
+            if county_fips in self.raw_features[i].index:
+                tensor[i - start_idx] = \
+                    torch.tensor(self.raw_features[i].loc[county_fips].to_numpy())
 
         return tensor

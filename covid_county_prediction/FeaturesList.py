@@ -19,7 +19,7 @@ class FeaturesList():
 
                 break
 
-    def extract_torch_tensor(self, county_fips: str, start_date: date, end_date: date):
+    def extract_torch_tensors(self, county_fips: str, start_date: date, end_date: date):
         tensors = []
         for i in range(len(self.features)):
             tensors.append(self.features[i].extract_torch_tensor(county_fips, start_date, end_date))
