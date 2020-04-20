@@ -4,8 +4,10 @@ import pandas as pd
 
 config = Config('general features config parameters')
 
+
 def get_county_info(county_info_link):
     return pd.read_html(county_info_link)[0].iloc[:-1].set_index('FIPS')
+
 
 county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
 

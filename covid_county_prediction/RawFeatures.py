@@ -2,6 +2,8 @@ import covid_county_prediction.config.RawFeaturesConfig as config
 import covid_county_prediction.config.features_config as features_config
 import pandas as pd
 from abc import ABC, abstractmethod
+from datetime import date
+
 
 class RawFeatures(ABC):
     def __init__(self, raw_features, feature_name: str):
@@ -10,7 +12,7 @@ class RawFeatures(ABC):
             raw_features: a list of Dataframes or just a Dataframe
         '''
         self.feature_name = feature_name
-        self.features = self.process_features(raw_features)
+        self.raw_features = self.process_features(raw_features)
 
     def process_features(self, raw_features):
         return self.get_features_with_index(features_config.county_info.index, raw_features)
@@ -37,5 +39,5 @@ class RawFeatures(ABC):
         return self.get_features_with_index(labels_df.index, self.raw_features)
 
     @abstractmethod
-    def extract(self):
+    def extract_torch_tensor(self, county_fips: str, start_date: date, end_date: date):
         raise NotImplementedError()

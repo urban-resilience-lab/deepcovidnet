@@ -158,7 +158,8 @@ class BaseCountyDataset(Dataset, ABC):
                 renamed_cols[c] = c[:-len(col_suffix)]
             output_dfs.append(main_df[cols].rename(columns=renamed_cols))
 
-        return TimeDependentFeatures(output_dfs, 'sg_patterns_monthly')
+        return \
+            TimeDependentFeatures(output_dfs, 'sg_patterns_monthly', start_date, timedelta(days=1))
 
     def read_weather_data(start_date, end_date):
         """
@@ -167,6 +168,7 @@ class BaseCountyDataset(Dataset, ABC):
         :param end_date: end date in the form YYYY-MM-DD
         :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
         """
+        # TODO: Return list of output dfs
         counties = features_config.county_info
 
         i = 0
@@ -186,8 +188,9 @@ class BaseCountyDataset(Dataset, ABC):
                     datatype = result.get('datatype')
                     if datatype == "TMIN":
                         mins.append(result.get('value'))
-                    if datatype == "TMAX":
+                    elif datatype == "TMAX":
                         maxs.append(result.get('value'))
+
             except TypeError:
                 pass
             try:
@@ -234,7 +237,8 @@ class BaseCountyDataset(Dataset, ABC):
 
             output_dfs.append(df.dropna())
 
-        return TimeDependentFeatures(output_dfs, 'sg_social_distancing')
+        return \
+            TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
 
     def read_num_cases(self, start_date: date, end_date: date, are_labels=False):
         # Returns the total new cases found between start_date and end_date - 1
@@ -262,7 +266,7 @@ class BaseCountyDataset(Dataset, ABC):
             assert len(output_dfs) == 1
             return output_dfs[0]         
         else:
-            return TimeDependentFeatures(output_dfs, 'new_cases')
+            return TimeDependentFeatures(output_dfs, 'new_cases', start_date, timedelta(days=1))
 
     def read_sg_mobility_incoming(self, start_date, end_date):
         files = config.sg_patterns_weekly_reader.get_files_between(start_date, end_date)
@@ -292,8 +296,8 @@ class BaseCountyDataset(Dataset, ABC):
             ).dropna()  # remove all rows for which safegraph_place_id does not have a county
 
             df = df.groupby('safegraph_place_id').agg(
-                lambda series : {k: v for d in series for k, v in d.items()}
-            )  #merge dictionaries
+                lambda series: {k: v for d in series for k, v in d.items()}
+            )  # merge dictionaries
 
             df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
 

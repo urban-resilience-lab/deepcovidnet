@@ -11,11 +11,11 @@ class ReaderConfig(Config):
     def __init__(self, file_granularity : str, file_path_format : str, 
                 is_timezone_variable: bool, timezone: timezone = None, 
                 part_prefix: str = None, file_extension='.csv'):
-        
+
         super(ReaderConfig, self).__init__('Config for reading data from different mediums')
-        
+
         assert file_granularity in ['daily', 'monthly', 'weekly']
-        
+
         self.file_granularity   = file_granularity
 
         if self.file_granularity == 'daily':
@@ -56,20 +56,20 @@ class ReaderConfig(Config):
                 for f in os.listdir(file_format):
                     if f.startswith(self.part_prefix) and f.endswith(self.file_extension):
                         f = os.path.join(file_format, f)
-                        
+
                         expected_end = d + self.date_offset
                         if type(expected_end) != date:
-                            expected_end = expected_end.date() #when it is a timezone
+                            expected_end = expected_end.date()  # when it is a timezone
 
                         files.add(
                             (f, d, min(end_date, expected_end))
                         )
-                    
+
             elif os.path.isfile(file_format):
                 expected_end = d + self.date_offset
                 if type(expected_end) != date:
-                    expected_end = expected_end.date() #when it is a timezone
-                
+                    expected_end = expected_end.date()  # when it is a timezone
+
                 files.add(
                     (file_format, d, min(end_date, expected_end))
                 )
