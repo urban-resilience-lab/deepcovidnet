@@ -90,6 +90,7 @@ class BaseCountyDataset(Dataset, ABC):
             index_start = month_start.day - 1
             index_end   = (month_end - timedelta(1)).day
 
+            logging.info(f'Reading {csv_file}...')
             df = pd.read_csv(csv_file, 
                     usecols=[
                             'safegraph_place_id', 
@@ -98,7 +99,7 @@ class BaseCountyDataset(Dataset, ABC):
                             # how long people stayed
                         ],
                     converters={'visits_by_day': (lambda x: np.array([int(s) for s in re.split(r'[,\s]\s*', x.strip('[]'))])[index_start:index_end])}
-            ) 
+            )
 
             decomposed_visits_df = pd.DataFrame(
                 df['visits_by_day'].values.tolist(), 
@@ -110,6 +111,7 @@ class BaseCountyDataset(Dataset, ABC):
 
             df = df.drop(['visits_by_day'], axis=1)
 
+            logging.info('Decomposed visits per day')
             df['countyFIPS'] = df['safegraph_place_id'].apply(
                 lambda x : self.poi_info[x]['countyFIPS'] 
                             if x in self.poi_info and self.poi_info[x]['countyFIPS'] 
@@ -137,6 +139,8 @@ class BaseCountyDataset(Dataset, ABC):
 
             df = df.groupby('countyFIPS').sum()
 
+            logging.info('Finished grouping by FIPS code')
+
             common_cols = main_df.columns.intersection(df.columns)
 
             main_df = df.merge(main_df, how='outer', suffixes=('_l', '_r'), 
@@ -149,6 +153,7 @@ class BaseCountyDataset(Dataset, ABC):
                 cols_to_remove.append(c + '_r')
 
             main_df.drop(cols_to_remove, axis=1, inplace=True)
+            logging.info('Finished merging columns')
 
         output_dfs = []
         for col_suffix in self._get_names_starting_with(start_date, start_date, end_date, 'day_'):
