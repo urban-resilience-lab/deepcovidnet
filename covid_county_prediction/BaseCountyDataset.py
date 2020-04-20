@@ -9,7 +9,7 @@ import string
 import requests
 from datetime import date, timedelta
 import covid_county_prediction.config.features_config as features_config
-
+import logging
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
@@ -88,7 +88,7 @@ class BaseCountyDataset(Dataset, ABC):
         for csv_file, month_start, month_end in files:
 
             index_start = month_start.day - 1
-            index_end   = month_end.day - 1
+            index_end   = (month_end - timedelta(1)).day
 
             df = pd.read_csv(csv_file, 
                     usecols=[
