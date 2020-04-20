@@ -1,4 +1,4 @@
-from RawFeatures import RawFeatures
+from covid_county_prediction.RawFeatures import RawFeatures
 import torch
 from datetime import date
 

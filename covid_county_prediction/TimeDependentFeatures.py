@@ -1,4 +1,4 @@
-from RawFeatures import RawFeatures
+from covid_county_prediction.RawFeatures import RawFeatures
 from datetime import date, timedelta
 from math import ceil
 
