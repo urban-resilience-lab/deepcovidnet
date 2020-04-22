@@ -11,8 +11,9 @@ from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
 import warnings
 
+
 class BaseRunner(metaclass=ABCMeta):
-    #inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
+    # inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
     def __init__(self, models, loss_fn, optimizers, best_metric_name,
         should_minimize_best_metric, debug = True, introspect = True, load_paths=None, model_code = ''):
@@ -37,10 +38,11 @@ class BaseRunner(metaclass=ABCMeta):
             [lr_scheduler.StepLR(optimizers[i], config.lr_decay_step_size, config.lr_decay_factor) 
                 for i in range(len(self.optimizers))]
         self.global_step = 0
-        
+
         if load_paths is not None:
             for i in range(len(load_paths)):
-                self.load_model(models[i], load_paths[i])
+                if load_paths[i]:
+                    self.load_model(models[i], load_paths[i])
 
         if(torch.cuda.is_available()):
             for i in range(len(self.nets)):

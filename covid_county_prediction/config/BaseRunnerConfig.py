@@ -6,8 +6,6 @@ from pathlib import Path
 
 config = Config('BaseRunnerConfig')
 
-config.epochs                   = 300
-
 config.print_freq               = 20
 config.intermittent_output_freq = 5 # Num batches between outputs
 config.save_freq                = 5
@@ -23,3 +21,4 @@ config.models_base_dir = os.path.join(
     Path(os.path.dirname(os.path.abspath(__file__))).parent.parent, 'models')
 
 sys.modules[__name__] = config
+
