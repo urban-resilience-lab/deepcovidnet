@@ -1,7 +1,5 @@
-from torch.utils.data import Dataset
-from abc import ABC, abstractmethod
 import pandas as pd
-import covid_county_prediction.config.BaseCountyDatasetConfig as config
+import covid_county_prediction.config.RawFeatureExtractorConfig as config
 import numpy as np
 import re
 import os
@@ -14,11 +12,10 @@ from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 
-# TODO: FIX TIMEZONES
 # TODO: DEALING WITH NA VALUES
 
 
-class BaseCountyDataset(Dataset, ABC):
+class RawFeatureExtractor():
     def __init__(self):
         self.poi_info = self.get_poi_info() 
 
@@ -328,11 +325,3 @@ class BaseCountyDataset(Dataset, ABC):
 
     def read_countywise_num_cases(self, start_date, end_date):
         pass
-
-    @abstractmethod
-    def __len__(self):
-        raise NotImplementedError()
-
-    @abstractmethod
-    def __getitem__(self, idx):
-        raise NotImplementedError()

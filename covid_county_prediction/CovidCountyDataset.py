@@ -1,16 +1,20 @@
-from covid_county_prediction.BaseCountyDataset import BaseCountyDataset
+from covid_county_prediction.RawFeatureExtractor import RawFeatureExtractor
+from torch.utils.data import Dataset
 from datetime import timedelta
 from covid_county_prediction.FeaturesList import FeaturesList
-import covid_county_prediction.config.BaseCountyDatasetConfig as base_county_config
+import covid_county_prediction.config.RawFeatureExtractor as raw_feature_extractor_config
+import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import bisect
 
 
-class CovidCountyDataset(BaseCountyDataset):
+class CovidCountyDataset(RawFeatureExtractor, Dataset):
     def __init__(self, data_start_date, data_end_date):
         super(CovidCountyDataset, self).__init__()
 
         training_data_end_date   = data_end_date
-        training_data_start_date = data_start_date - timedelta(days=base_county_config.past_days_to_consider)
+        training_data_start_date = \
+            data_start_date - \
+            timedelta(days=raw_feature_extractor_config.past_days_to_consider)
 
         self.labels_lens = []
 
@@ -21,7 +25,7 @@ class CovidCountyDataset(BaseCountyDataset):
             cur_labels = self.read_num_cases(d, d + timedelta(days=1), are_labels=True)
             self.labels.append(
                 (
-                    d - timedelta(days=base_county_config.past_days_to_consider),
+                    d - timedelta(days=raw_feature_extractor_config.past_days_to_consider),
                     d,
                     cur_labels
                 )
@@ -44,14 +48,22 @@ class CovidCountyDataset(BaseCountyDataset):
     def __len__(self):
         return self.labels_lens[-1]
 
+    def _classify_label(self, label):
+        return bisect.bisect_left(config.labels_class_boundaries, label)
+
     def __getitem__(self, idx):
         labels_idx = bisect.bisect_left(self.labels_lens, idx)
         if self.labels_lens[labels_idx] == idx:
             labels_idx += 1
 
-        return \
-            self.features.extract_torch_tensors(
+        out = self.features.extract_torch_tensors(
                 county_fips=self.labels[labels_idx][2].iloc[idx].name,
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )
+
+        out[config.labels_key] = \
+            self._classify_label(self.labels[labels_idx][2].iloc[idx]['new_cases'])
+
+        return out
+

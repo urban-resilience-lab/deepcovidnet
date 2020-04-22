@@ -5,7 +5,8 @@ import os
 from datetime import timezone, date, timedelta
 from pandas.tseries import offsets
 
-config = Config('Config for BaseCountyDataset')
+config = Config('Config for RawFeatureExtractor')
+
 
 class ReaderConfig(Config):
     def __init__(self, file_granularity : str, file_path_format : str, 
@@ -79,6 +80,7 @@ class ReaderConfig(Config):
                 d = d.date()
 
         return list(files)
+
 
 # core poi
 config.core_poi_csv_prefix = 'core_poi-part'
