@@ -49,7 +49,7 @@ class RawFeatureExtractor():
         for f in os.listdir(config.sg_open_census_data_path):
             if f.startswith('cbg_b') or f.startswith('cbg_c'):
                 f = os.path.join(config.sg_open_census_data_path, f)
-                df = pd.read_csv(f, dtype={'census_block_grou': str}) 
+                df = pd.read_csv(f, dtype={'census_block_group': str})
                 logging.info(f'Successfully read {f}')
 
                 cols_to_remove = [c for c in df.columns if 'Margin of Error' in c]
@@ -229,11 +229,14 @@ class RawFeatureExtractor():
                     dtype={'origin_census_block_group': str},
                 ).set_index('origin_census_block_group')
 
+            logging.info(f'Successfully read {csv_file}')
+
             #prepare for weighted average
             df['distance_traveled_from_home']   *= df['device_count']
             df['median_home_dwell_time']        *= df['device_count']
 
             df = df.groupby(lambda cbg: cbg[:5]).sum()
+            logging.info('Grouped by counties')
 
             df['completely_home_device_count']      /= df['device_count']
             df['part_time_work_behavior_devices']   /= df['device_count']

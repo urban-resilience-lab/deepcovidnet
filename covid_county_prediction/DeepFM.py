@@ -5,12 +5,32 @@ import torch
 
 
 class DeepFM(nn.Module):
-    def __init__(self, num_classes, feature_dim=hyperparams.embedding_size):
+    def __init__(self, num_classes = dataset_config.num_classes, 
+            feature_dim=hyperparams.embedding_size, num_features=dataset_config.num_features):
         super(DeepFM, self).__init__()
 
+        assert num_features > 1
+        
         self.num_classes = num_classes
         self.feature_dim = feature_dim
-        self.are_layers_set = False
+        self.num_features = num_features
+        
+        self.deep_processor = nn.Sequential(
+                nn.Linear(self.num_features * self.feature_dim, 1024),
+                nn.ReLU(),
+                nn.Linear(1024, 512),
+                nn.ReLU(),
+                nn.Linear(512, hyperparams.higher_order_features_size)
+            )
+
+        self.classifier = nn.Sequential(
+            nn.Linear(
+                hyperparams.higher_order_features_size +
+                int(self.num_features * (self.num_features - 1) / 2),
+                self.num_classes
+            )
+        )
+
 
     def forward(self, features_dict):
         '''
@@ -19,32 +39,13 @@ class DeepFM(nn.Module):
         '''
         assert dataset_config.labels_key not in features_dict
 
-        if not self.are_layers_set:
-            self.num_features = len(features_dict)
-            self.deep_processor = nn.Sequential(
-                nn.Linear(self.num_features * self.feature_dim, 1024),
-                nn.ReLU(),
-                nn.Linear(1024, 512),
-                nn.ReLU(),
-                nn.Linear(512, hyperparams.higher_order_features_size)
-            )
-            self.classifier = nn.Sequential(
-                nn.Linear(
-                    hyperparams.higher_order_features_size +
-                    self.num_features * (self.num_features - 1) / 2,
-                    hyperparams.num_classes
-                )
-            )
-
-            self.are_layers_set = True
-
         sorted_keys = sorted(features_dict)
 
         # FM Part
-        second_order_interactions = torch.zeros(
+        second_order_interactions = torch.empty(
                                         features_dict[list(features_dict.keys())[0]].shape[0],
-                                        self.num_features * (self.num_features - 1) / 2, 
-                                        requires_grad=True
+                                        int(self.num_features * (self.num_features - 1) / 2), 
+                                        requires_grad=False
                                     )
 
         idx = 0
@@ -59,8 +60,8 @@ class DeepFM(nn.Module):
 
         # Deep Part
         concatenated_features = [features_dict[sorted_keys[i]] for i in range(len(sorted_keys))]
-        concatenated_features = torch.cat(concatenated_features)
+        concatenated_features = torch.cat(concatenated_features, dim=1)
         higher_order_interactions = self.deep_processor(concatenated_features)
 
-        interactions = torch.cat([higher_order_interactions, second_order_interactions])
+        interactions = torch.cat([higher_order_interactions, second_order_interactions], dim=1)
         return self.classifier(interactions)

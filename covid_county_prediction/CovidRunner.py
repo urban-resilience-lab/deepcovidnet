@@ -21,7 +21,7 @@ class CovidRunner(BaseRunner):
             )
 
         super(CovidRunner, self).__init__(
-            nets=[net],
+            models=[net],
             loss_fn=nn.CrossEntropyLoss(),
             optimizers=[optimizer],
             best_metric_name='loss',
@@ -33,20 +33,20 @@ class CovidRunner(BaseRunner):
         loss = self.loss_fn(pred, labels)
         acc  = self._get_accuracy(pred, labels)
 
-        class_preds = pred.argmin(dim=1)
+        class_preds = pred.argmax(dim=1)
 
-        class_preds_mean = class_preds.mean().item()
-        class_preds_std  = class_preds.std().item()
+        class_preds_mean = class_preds.float().mean().item()
+        class_preds_std  = class_preds.float().std().item()
 
-        gt_mean = labels.mean().item()
-        gt_std  = labels.std().item()
+        gt_mean = labels.float().mean().item()
+        gt_std  = labels.float().std().item()
 
         metrics = [
             ('loss', loss.mean().item()),
             ('acc', acc),
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
-            ('gt_mean', gt_mean)
+            ('gt_mean', gt_mean),
             ('gt_mean', gt_std)
         ]
 
@@ -79,5 +79,5 @@ class CovidRunner(BaseRunner):
         return self.get_metrics(pred, labels)
 
     def _get_accuracy(self, pred, labels):
-        assert False, 'Needs Testing'
-        (pred.argmin(dim=1) == labels).sum().item() / labels.shape[0]
+        # assert False, 'Needs Testing'
+        return (pred.argmax(dim=1) == labels).sum().item() / labels.shape[0]

@@ -6,6 +6,7 @@ import tensorboardX
 import covid_county_prediction.utils as utils
 import time
 import covid_county_prediction.config.BaseRunnerConfig as config
+import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import os
 from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
@@ -35,7 +36,7 @@ class BaseRunner(metaclass=ABCMeta):
         self.model_code = model_code
         self.keys_for_gpu = None
         self.lr_schedulers = \
-            [lr_scheduler.StepLR(optimizers[i], config.lr_decay_step_size, config.lr_decay_factor) 
+            [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor) 
                 for i in range(len(self.optimizers))]
         self.global_step = 0
 
@@ -135,8 +136,9 @@ class BaseRunner(metaclass=ABCMeta):
             # loss.backward is called in metrics_calc
             if metrics is not None:
                 for j, (metric_name, metric_val) in enumerate(metrics):
-                    self.writer.add_scalar(os.path.join(self.name, prefix + '_' + 
-                        metric_name), metric_val, self.global_step)
+                    if metric_val == metric_val: # if metric_val != nan/inf
+                        self.writer.add_scalar(os.path.join(self.name, prefix + '_' + 
+                            metric_name), metric_val, self.global_step)
 
                     if not progress_display_made:
                         other_meters.append(utils.AverageMeter(metric_name))
@@ -202,7 +204,7 @@ class BaseRunner(metaclass=ABCMeta):
 
         for i in range(len(self.lr_schedulers)):
             if(min(self.lr_schedulers[i].get_lr()) >=\
-                config.min_learning_rate):
+                hyperparams.min_learning_rate):
                     self.lr_schedulers[i].step()
 
         self.output_weight_distribution("final_weights")

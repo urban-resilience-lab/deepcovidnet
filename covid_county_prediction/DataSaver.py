@@ -1,4 +1,4 @@
-from covid_county_dataset.RawFeatureExtractor import RawFeatureExtractor
+from covid_county_prediction.RawFeatureExtractor import RawFeatureExtractor
 import covid_county_prediction.config.global_config as global_config
 import os
 import covid_county_prediction.config.DataSaverConfig as config
@@ -9,6 +9,7 @@ class DataSaver(RawFeatureExtractor):
     def __init__(self):
         if not os.path.exists(global_config.data_save_dir):
             os.mkdir(global_config.data_save_dir)
+        super(DataSaver, self).__init__()
 
     def save_census_data(self, overwrite=False):
         if not os.path.exists(config.census_data_root):
@@ -45,3 +46,4 @@ class DataSaver(RawFeatureExtractor):
 
         df.to_csv(save_file, index_label='fips')
         logging.info(f'Saved {save_file}!')
+

@@ -22,7 +22,9 @@ config.sg_patterns_monthly_file_format = \
     '%Y-%m-%d-monthly-patterns.csv'
 
 config.get_sg_patterns_monthly_file = \
-    lambda d: d.strftime(config.sg_patterns_monthly_file_format)
+    lambda d: d.strftime(
+            os.path.join(config.sg_patterns_monthly_root, config.sg_patterns_monthly_file_format)
+        )
 
 # social distancing data
 
@@ -33,6 +35,8 @@ config.sg_social_distancing_file_format = \
     '%Y-%m-%d-social-distancing.csv'
 
 config.get_sg_social_distancing_file = \
-    lambda d: d.strftime(config.sg_social_distancing_file_format)
+    lambda d: d.strftime(
+            os.path.join(config.sg_social_distancing_root, config.sg_social_distancing_file_format)
+        )
 
 sys.modules[__name__] = config

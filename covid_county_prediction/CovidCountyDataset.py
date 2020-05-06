@@ -2,7 +2,7 @@ from covid_county_prediction.RawFeatureExtractor import RawFeatureExtractor
 from torch.utils.data import Dataset
 from datetime import timedelta
 from covid_county_prediction.FeaturesList import FeaturesList
-import covid_county_prediction.config.RawFeatureExtractor as raw_feature_extractor_config
+import covid_county_prediction.config.RawFeatureExtractorConfig as raw_feature_extractor_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import bisect
 
@@ -37,13 +37,15 @@ class CovidCountyDataset(RawFeatureExtractor, Dataset):
             d += timedelta(days=1)
 
         self.features = FeaturesList([
-            self.read_census_data(),
-            self.read_sg_patterns_monthly(training_data_start_date, training_data_end_date),
+            # self.read_census_data(),
+            # self.read_sg_patterns_monthly(training_data_start_date, training_data_end_date)
             # self.read_weather_data(training_data_start_date, training_data_end_date),
             self.read_sg_social_distancing(training_data_start_date, training_data_end_date),
             self.read_num_cases(training_data_start_date, training_data_end_date)
             # self.read_sg_mobility_incoming(training_data_start_date, training_data_end_date)
         ])
+
+        assert len(self.features) == config.num_features
 
     def __len__(self):
         return self.labels_lens[-1]

@@ -22,6 +22,6 @@ class TimeDependentFeatures(RawFeatures):
         for i in range(start_idx, end_idx):
             if county_fips in self.raw_features[i].index:
                 tensor[i - start_idx] = \
-                    torch.tensor(self.raw_features[i].loc[county_fips].to_numpy())
+                    torch.tensor(self.raw_features[i].loc[county_fips].fillna(0).to_numpy())
 
         return tensor

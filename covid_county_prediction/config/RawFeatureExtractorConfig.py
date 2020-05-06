@@ -84,7 +84,7 @@ class ReaderConfig(Config):
 
 # core poi
 config.core_poi_csv_prefix = 'core_poi-part'
-config.core_poi_path = os.path.join(global_config.data_base_dir, 'CoreRecords-CORE_POI-2019_03-2020-03-25')
+config.core_poi_path = os.path.join(global_config.data_base_dir, 'core_places/CoreApr2020Release-CORE_POI-2020_03-2020-04-07')
 
 # open census
 config.sg_open_census_data_path = os.path.join(global_config.data_base_dir, "safegraph_open_census_data/data/")
@@ -102,13 +102,13 @@ config.past_days_to_consider = 20
 # reader configs
 config.sg_social_distancing_reader =  ReaderConfig(
                                     file_granularity='daily', 
-                                    file_path_format='%Y/%m/%d/%Y-%m-%d-social-distancing.csv',
+                                    file_path_format='social_distancing/%Y/%m/%d/%Y-%m-%d-social-distancing.csv',
                                     is_timezone_variable=True
                                 )
 
 config.sg_patterns_monthly_reader = ReaderConfig(
                                         file_granularity='monthly', 
-                                        file_path_format='%y%m-AllPatterns-PATTERNS-%Y_%m/',
+                                        file_path_format='monthly_patterns/%y%m-AllPatterns-PATTERNS-%Y_%m/',
                                         is_timezone_variable=False,
                                         timezone=timezone(timedelta()),
                                         part_prefix='patterns-part'
@@ -116,7 +116,7 @@ config.sg_patterns_monthly_reader = ReaderConfig(
 
 config.sg_patterns_weekly_reader = ReaderConfig(
                                         file_granularity='weekly', 
-                                        file_path_format='%y-%m-%d-weekly-patterns.csv',
+                                        file_path_format='weekly_patterns/%Y-%m-%d-weekly-patterns.csv',
                                         is_timezone_variable=True
                                     )
 
