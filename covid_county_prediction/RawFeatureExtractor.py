@@ -169,44 +169,39 @@ class RawFeatureExtractor():
         return \
             TimeDependentFeatures(output_dfs, 'sg_patterns_monthly', start_date, timedelta(days=1))
 
-    def read_weather_data(start_date, end_date):
-        """
-        Get weather from NOAA using FIPS code (gets all relevant reportings from stations in that county)
-        :param start_date: start date in the form YYYY-MM-DD
-        :param end_date: end date in the form YYYY-MM-DD
-        :return: dictionary with TMIN (minimum temperature in tenths of a degree celcius) and TMAX (same unit max temp)
-        """
-        # TODO: Return list of output dfs
+    def read_weather_data(self, start_date, end_date):
+        dfs = []
+        # Load county data and make df with relevant data for the county
         counties = features_config.county_info
-
-        i = 0
-        for index, row in counties.iterrows():
-            if i > 50:
-                break
-            i = i + 1
-            mins = []
-            maxs = []
-            response = requests.get(
-                "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000".format(
-                    str(index), str(start_date), str(end_date)),
+        attributes = '&datatypeid='.join(features_config.weather_attributes)
+        for county, row in counties.iterrows():
+            # TODO Offset if 1000 entries exist
+            result = requests.get(
+                "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?"
+                "datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000"
+                "&datatypeid={}".format(
+                    str(county), str(start_date), str(end_date), attributes),
                 headers={"token": os.environ.get("WEATHER_TOKEN")})
-            data = response.json()
-            try:
-                for result in data.get('results'):
-                    datatype = result.get('datatype')
-                    if datatype == "TMIN":
-                        mins.append(result.get('value'))
-                    elif datatype == "TMAX":
-                        maxs.append(result.get('value'))
 
-            except TypeError:
-                pass
+            if result.status_code != 200:
+                raise ConnectionError("Unable to connect and retrieve data from NOAA. Status code:", result.status_code)
+
             try:
-                counties.at[index, 'Temp Min'] = sum(mins) / len(mins)
-                counties.at[index, 'Temp Max'] = sum(maxs) / len(maxs)
+                df = pd.json_normalize(result.json(), 'results')
+                df_filtered = df[df['datatype'].isin(features_config.weather_attributes)]
+                df_filtered = df_filtered.groupby(['date', 'datatype']).agg({'value': 'mean'}).reset_index()
+                df_filtered['FIPS'] = county
+                dfs.append(df_filtered)
             except:
-                pass
-        return TimeDependentFeatures(counties, 'weather_data')
+                pass  # County not found in weather dataset
+        # Join all county data
+        dfs = pd.concat(dfs)
+        # Filter dfs by day
+        dfs_per_day = []
+        dates = dfs['date'].drop_duplicates().sort_values()  # Get all dates in df
+        for date in dates:
+            dfs_per_day.append(dfs[dfs['date'] == date])
+        return TimeDependentFeatures(dfs_per_day, 'weather_data')  # TODO Add date arguments to TDF
 
     def read_sg_social_distancing(self, start_date, end_date):
         output_dfs = []
