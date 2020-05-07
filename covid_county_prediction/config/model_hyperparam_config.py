@@ -6,7 +6,7 @@ config = Config('Hyperparameters for DNN model')
 config.epochs                       = 300
 
 # optimizer parameters
-config.lr                           = 0.05
+config.lr                           = 0.005
 config.momentum                     = 0.9
 config.weight_decay                 = 4e-4
 config.min_learning_rate            = 0.000001

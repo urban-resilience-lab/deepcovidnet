@@ -6,7 +6,7 @@ from pathlib import Path
 
 config = Config('BaseRunnerConfig')
 
-config.print_freq               = 1
+config.print_freq               = 25
 config.intermittent_output_freq = 5 # Num batches between outputs
 config.save_freq                = 5
 
