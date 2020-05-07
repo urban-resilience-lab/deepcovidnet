@@ -9,16 +9,14 @@ import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 class CovidRunner(BaseRunner):
     def __init__(self, load_path=None):
         net = CovidModule()
+        self.is_optimizer_set = False
 
         if torch.cuda.is_available():
             net = net.cuda()
 
-        optimizer = torch.optim.SGD(
-                net.parameters(),
-                lr=hyperparams.lr,
-                momentum=hyperparams.momentum,
-                weight_decay=hyperparams.weight_decay
-            )
+        optimizer = self.get_optimizer(
+                        net.parameters()
+                    )
 
         super(CovidRunner, self).__init__(
             models=[net],
@@ -60,6 +58,12 @@ class CovidRunner(BaseRunner):
         labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 
+        if not self.is_optimizer_set:
+            self.optimizers[0] = self.get_optimizer(
+                self.nets[0].parameters()
+            )  # add parameters of embedding module too
+            self.is_optimizer_set = True
+
         # calculate metrics
         loss, metrics = self.get_metrics(pred, labels, get_loss=True)
 
@@ -71,6 +75,14 @@ class CovidRunner(BaseRunner):
         self.optimizers[0].step()
 
         return metrics
+
+    def get_optimizer(self, params):
+        return torch.optim.SGD(
+                params,
+                lr=hyperparams.lr,
+                momentum=hyperparams.momentum,
+                weight_decay=hyperparams.weight_decay
+            )
 
     def test_batch_and_get_metrics(self, batch_dict):
         labels = batch_dict.pop(dataset_config.labels_key)

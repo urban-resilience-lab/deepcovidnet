@@ -36,7 +36,7 @@ class BaseRunner(metaclass=ABCMeta):
         self.model_code = model_code
         self.keys_for_gpu = None
         self.lr_schedulers = \
-            [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor) 
+            [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
         self.global_step = 0
 

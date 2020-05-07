@@ -8,9 +8,9 @@ from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTi
 
 # TODO: Parameters must be initialized at init time
 
+
 class EmbeddingModule(nn.Module):
     def __init__(self):
-        assert False, 'parameters must be initialized in init'
         super(EmbeddingModule, self).__init__()
         self.are_layers_set = False
         self.embedding_modules = nn.ModuleDict()

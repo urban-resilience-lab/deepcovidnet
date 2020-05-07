@@ -10,11 +10,11 @@ class DeepFM(nn.Module):
         super(DeepFM, self).__init__()
 
         assert num_features > 1
-        
+
         self.num_classes = num_classes
         self.feature_dim = feature_dim
         self.num_features = num_features
-        
+
         self.deep_processor = nn.Sequential(
                 nn.Linear(self.num_features * self.feature_dim, 1024),
                 nn.ReLU(),
@@ -31,7 +31,6 @@ class DeepFM(nn.Module):
             )
         )
 
-
     def forward(self, features_dict):
         '''
         Args:
@@ -44,7 +43,7 @@ class DeepFM(nn.Module):
         # FM Part
         second_order_interactions = torch.empty(
                                         features_dict[list(features_dict.keys())[0]].shape[0],
-                                        int(self.num_features * (self.num_features - 1) / 2), 
+                                        int(self.num_features * (self.num_features - 1) / 2),
                                         requires_grad=False
                                     )
 
