@@ -29,7 +29,7 @@ end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
 
 if args.mode == 'train':
 
-    train_loader = DataLoader(CovidCountyDataset(start_date, end_date), batch_size=hyperparams.batch_size)
+    train_loader = DataLoader(CovidCountyDataset(start_date, end_date), batch_size=hyperparams.batch_size, shuffle=True)
     runner = CovidRunner()
 
     runner.train(train_loader, hyperparams.epochs)
