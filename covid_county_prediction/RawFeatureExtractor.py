@@ -17,7 +17,7 @@ from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 
 class RawFeatureExtractor():
     def __init__(self):
-        self.poi_info = self.get_poi_info() 
+        self.poi_info = self.get_poi_info()
 
     def get_poi_info(self):
         # get county code for each poi
@@ -33,6 +33,11 @@ class RawFeatureExtractor():
             if f.startswith(config.core_poi_csv_prefix):
                 f = os.path.join(config.core_poi_path, f)
                 temp_df = pd.read_csv(f, usecols=['safegraph_place_id', 'top_category'])
+                temp_df['top_category'] = temp_df['top_category'].apply(
+                    lambda cat: cat 
+                                if cat in config.whitelisted_cats
+                                else config.default_cat
+                )
                 temp_df = temp_df.dropna().set_index('safegraph_place_id')
 
                 assert len(cat_df.index.intersection(temp_df.index)) == 0
@@ -82,7 +87,9 @@ class RawFeatureExtractor():
         return ans
 
     def read_sg_patterns_monthly(self, start_date, end_date):
-        files = config.sg_patterns_monthly_reader.get_files_between(start_date, end_date)
+        files = config.sg_patterns_monthly_reader.get_files_between(
+                    start_date, end_date
+                )
 
         main_df = pd.DataFrame()
 
@@ -93,9 +100,9 @@ class RawFeatureExtractor():
             index_start = month_start.day - 1
             index_end   = (month_end - timedelta(1)).day
 
-            df = pd.read_csv(csv_file, 
+            df = pd.read_csv(csv_file,
                     usecols=[
-                            'safegraph_place_id', 
+                            'safegraph_place_id',
                             'visits_by_day'
                             # bucketed_dwell_times may be useful to see
                             # how long people stayed
@@ -104,9 +111,12 @@ class RawFeatureExtractor():
             )
             logging.info(f'Successfully read {csv_file}...')
 
+            # decompose visits by day into different columns
             decomposed_visits_df = pd.DataFrame(
-                df['visits_by_day'].values.tolist(), 
-                columns=self._get_names_starting_with(start_date, month_start, month_end, 'visits_day_')
+                df['visits_by_day'].values.tolist(),
+                columns=self._get_names_starting_with(
+                    start_date, month_start, month_end, 'visits_day_'
+                )
             )
 
             for c in decomposed_visits_df.columns:
@@ -115,30 +125,37 @@ class RawFeatureExtractor():
             df = df.drop(['visits_by_day'], axis=1)
 
             logging.info('Decomposed visits per day')
+
+            # find FIPS and category of poi
             df['countyFIPS'] = df['safegraph_place_id'].apply(
-                lambda x : self.poi_info[x]['countyFIPS'] 
+                lambda x: self.poi_info[x]['countyFIPS']
                             if x in self.poi_info and self.poi_info[x]['countyFIPS'] 
                             else '00000'
             )
 
             df['top_category'] = df['safegraph_place_id'].apply(
-                lambda x : self.poi_info[x]['top_category'] 
+                lambda x: self.poi_info[x]['top_category']
                             if x in self.poi_info and self.poi_info[x]['top_category'] 
                             else 'Unknown'
             )
+            logging.info('Finished getting categories')
 
             top_cats = set()
             for k in self.poi_info:
-                if type(self.poi_info[k]['top_category']) == type(''):
-                    top_cats.add(self.poi_info[k]['top_category'])
+                top_cats.add(self.poi_info[k]['top_category'])
 
             for cat in top_cats:
                 colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
-                for suffix in self._get_names_starting_with(start_date, month_start, month_end, '_visits_day_'):
+                for suffix in self._get_names_starting_with(
+                    start_date, month_start, month_end, '_visits_day_'
+                ):
+                    logging.info(f'Created column for {cat} on {suffix}')
                     df[colname + suffix] = df.apply(
                         lambda row : row[suffix[1:]] if cat == row['top_category'] else 0,
                         axis=1
                     )
+
+            logging.info('Finished creating category columns')
 
             df = df.groupby('countyFIPS').sum()
 
