@@ -13,9 +13,12 @@ class TimeDependentFeatures(RawFeatures):
     def get_date(self, i):
         return self.start_date + i * self.interval
 
+    def get_index(self, cur_date, round_fn=int):
+        return round_fn((cur_date - self.start_date) / self.interval)
+
     def extract_torch_tensor(self, county_fips: str, start_date: date, end_date: date):
-        start_idx   = int((start_date - self.start_date) / self.interval)
-        end_idx     = ceil((end_date - self.start_date) / self.interval)
+        start_idx   = self.get_index(start_date)
+        end_idx     = self.get_index(end_date, round_fn=ceil)
 
         tensor = torch.zeros(end_idx - start_idx, self.raw_features[0].shape[1])
 

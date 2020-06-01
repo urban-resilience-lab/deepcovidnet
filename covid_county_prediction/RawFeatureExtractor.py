@@ -226,7 +226,7 @@ class RawFeatureExtractor():
 
             logging.info(f'Successfully read {csv_file}')
 
-            #prepare for weighted average
+            # prepare for weighted average
             df['distance_traveled_from_home']   *= df['device_count']
             df['median_home_dwell_time']        *= df['device_count']
 
@@ -308,7 +308,7 @@ class RawFeatureExtractor():
             df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
 
             mobility_df = pd.DataFrame(
-                index=features_config.county_info.index, 
+                index=features_config.county_info.index,
                 columns=features_config.county_info.index
             )
 
