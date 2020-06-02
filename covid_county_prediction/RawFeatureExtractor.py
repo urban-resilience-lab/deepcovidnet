@@ -263,8 +263,13 @@ class RawFeatureExtractor():
         return \
             TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
 
-    def read_num_cases(self, start_date: date, end_date: date, are_labels=False):
+    def read_num_cases(
+        self, start_date: date, end_date: date, are_labels=False,
+            return_countywise=False):
         # Returns the total new cases found between start_date and end_date - 1
+
+        assert feature_type in ['TimeDependent', 'CountyWiseTimeDependent']
+
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
         ], dtype={'fips': str}).dropna().set_index('fips')
@@ -288,8 +293,15 @@ class RawFeatureExtractor():
         if are_labels:
             assert len(output_dfs) == 1
             return output_dfs[0]         
+        elif return_countywise:
+            return CountyWiseTimeDependentFeatures(
+                output_dfs, 'countywise_new_cases', start_date,
+                timedelta(days=1), cur_type='CONSTANT'
+            )
         else:
-            return TimeDependentFeatures(output_dfs, 'new_cases', start_date, timedelta(days=1))
+            return TimeDependentFeatures(
+                output_dfs, 'new_cases', start_date, timedelta(days=1)
+            )
 
     def read_sg_mobility_incoming(self, start_date, end_date):
         files = config.sg_patterns_weekly_reader.get_files_between(start_date, end_date)
@@ -307,9 +319,9 @@ class RawFeatureExtractor():
         output_dfs = []
 
         for csv_file, _, _ in files:
-            df = pd.read_csv(csv_file, 
+            df = pd.read_csv(csv_file,
                     usecols=[
-                            'safegraph_place_id', 
+                            'safegraph_place_id',
                             'visitor_home_cbgs'
                         ],
                     converters={
@@ -336,7 +348,7 @@ class RawFeatureExtractor():
 
             output_dfs.append(mobility_df.fillna(0))
 
-        return CountyWiseTimeDependentFeatures(output_dfs, 'mobility_data')
-
-    def read_countywise_num_cases(self, start_date, end_date):
-        pass
+        return CountyWiseTimeDependentFeatures(
+                output_dfs, 'mobility_data', start_date, timedelta(1),
+                cur_type='CROSS'
+            )
