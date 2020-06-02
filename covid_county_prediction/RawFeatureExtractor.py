@@ -272,12 +272,9 @@ class RawFeatureExtractor():
         return \
             TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
 
-    def read_num_cases(
-        self, start_date: date, end_date: date, are_labels=False,
-            return_countywise=False):
-        # Returns the total new cases found between start_date and end_date - 1
+    def read_num_cases(self, start_date, end_date, are_labels=False,
+                       return_countywise=False):
 
-        assert feature_type in ['TimeDependent', 'CountyWiseTimeDependent']
         if are_labels:
             assert not return_countywise
 
