@@ -142,7 +142,8 @@ class RawFeatureExtractor():
 
             top_cats = set()
             for k in self.poi_info:
-                top_cats.add(self.poi_info[k]['top_category'])
+                if isinstance(self.poi_info[k]['top_category'], str):
+                    top_cats.add(self.poi_info[k]['top_category'])
 
             for cat in top_cats:
                 colname = cat.translate(str.maketrans('','',string.punctuation)).lower().replace(' ', '_')
