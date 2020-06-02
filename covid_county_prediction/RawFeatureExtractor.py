@@ -150,7 +150,6 @@ class RawFeatureExtractor():
                 for suffix in self._get_names_starting_with(
                     start_date, month_start, month_end, '_visits_day_'
                 ):
-                    logging.info(f'Created column for {cat} on {suffix}')
                     df[colname + suffix] = \
                         df[suffix[1:]] * (df['top_category'] == cat)
 
