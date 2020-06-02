@@ -269,6 +269,8 @@ class RawFeatureExtractor():
         # Returns the total new cases found between start_date and end_date - 1
 
         assert feature_type in ['TimeDependent', 'CountyWiseTimeDependent']
+        if are_labels:
+            assert not return_countywise
 
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
@@ -281,10 +283,12 @@ class RawFeatureExtractor():
             df_yesterday    = df[df['date'] == (cur_date - timedelta(days=1)).strftime('%Y-%m-%d')]
             df_today        = df[df['date'] == cur_date.strftime('%Y-%m-%d')]
 
-            cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
-
-            cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
-            cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
+            if return_countywise:
+                cur_df = df_today.drop(['date'])
+            else:
+                cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
+                cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
+                cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
 
             output_dfs.append(cur_df.fillna(0))
 
@@ -292,7 +296,7 @@ class RawFeatureExtractor():
 
         if are_labels:
             assert len(output_dfs) == 1
-            return output_dfs[0]         
+            return output_dfs[0]  
         elif return_countywise:
             return CountyWiseTimeDependentFeatures(
                 output_dfs, 'countywise_new_cases', start_date,
