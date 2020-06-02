@@ -296,7 +296,7 @@ class RawFeatureExtractor():
 
         if are_labels:
             assert len(output_dfs) == 1
-            return output_dfs[0]  
+            return output_dfs[0]
         elif return_countywise:
             return CountyWiseTimeDependentFeatures(
                 output_dfs, 'countywise_new_cases', start_date,

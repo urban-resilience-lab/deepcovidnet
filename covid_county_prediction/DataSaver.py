@@ -46,4 +46,3 @@ class DataSaver(RawFeatureExtractor):
 
         df.to_csv(save_file, index_label='fips')
         logging.info(f'Saved {save_file}!')
-
