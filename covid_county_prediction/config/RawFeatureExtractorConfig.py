@@ -110,15 +110,19 @@ config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-dat
 # past days
 config.past_days_to_consider = 20
 
+# weather
+config.weather_token = 'WfaiwuFYdVwalQeqsdKwhVBHVbfoLGHA'
+config.weather_attributes = ['TMIN', 'TMAX']
+
 # reader configs
-config.sg_social_distancing_reader =  ReaderConfig(
-                                    file_granularity='daily', 
+config.sg_social_distancing_reader = ReaderConfig(
+                                    file_granularity='daily',
                                     file_path_format='social_distancing/%Y/%m/%d/%Y-%m-%d-social-distancing.csv',
                                     is_timezone_variable=True
                                 )
 
 config.sg_patterns_monthly_reader = ReaderConfig(
-                                        file_granularity='monthly', 
+                                        file_granularity='monthly',
                                         file_path_format='monthly_patterns/%y%m-AllPatterns-PATTERNS-%Y_%m/',
                                         is_timezone_variable=False,
                                         timezone=timezone(timedelta()),
@@ -126,7 +130,7 @@ config.sg_patterns_monthly_reader = ReaderConfig(
                                     )
 
 config.sg_patterns_weekly_reader = ReaderConfig(
-                                        file_granularity='weekly', 
+                                        file_granularity='weekly',
                                         file_path_format='weekly_patterns/%Y-%m-%d-weekly-patterns.csv',
                                         is_timezone_variable=True
                                     )

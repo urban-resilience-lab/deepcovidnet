@@ -19,23 +19,46 @@ class DataSaver(RawFeatureExtractor):
         self._save_df(config.census_data_path, df, overwrite)
 
     def save_sg_patterns_monthly(self, start_date, end_date, overwrite=False):
-        if not os.path.exists(config.sg_patterns_monthly_root):
-            os.mkdir(config.sg_patterns_monthly_root)
-
-        features = self.read_sg_patterns_monthly(start_date, end_date)
-
-        for i in range(len(features.raw_features)):
-            save_file = config.get_sg_patterns_monthly_file(features.get_date(i))
-            self._save_df(save_file, features.raw_features[i], overwrite)
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_sg_patterns_monthly,
+            config.sg_patterns_monthly_root,
+            config.get_sg_patterns_monthly_file,
+            overwrite
+        )
 
     def save_sg_social_distancing(self, start_date, end_date, overwrite=False):
-        if not os.path.exists(config.sg_social_distancing_root):
-            os.mkdir(config.sg_social_distancing_root)
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_sg_social_distancing,
+            config.sg_social_distancing_root,
+            config.get_sg_social_distancing_file,
+            overwrite
+        )
 
-        features = self.read_sg_social_distancing(start_date, end_date)
+    def save_weather_data(self, start_date, end_date, overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_weather_data,
+            config.weather_root,
+            config.get_weather_file,
+            overwrite
+        )
+
+    def _save_time_dep_features(
+        self, start_date, end_date, get_features,
+        save_root, get_save_file, overwrite
+    ):
+        if not os.path.exists(save_root):
+            os.mkdir(save_root)
+
+        features = get_features(start_date, end_date)
 
         for i in range(len(features.raw_features)):
-            save_file = config.get_sg_social_distancing_file(features.get_date(i))
+            save_file = get_save_file(features.get_date(i))
             self._save_df(save_file, features.raw_features[i], overwrite)
 
     def _save_df(self, save_file, df, overwrite=False):

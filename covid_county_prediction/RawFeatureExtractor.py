@@ -185,38 +185,49 @@ class RawFeatureExtractor():
             TimeDependentFeatures(output_dfs, 'sg_patterns_monthly', start_date, timedelta(days=1))
 
     def read_weather_data(self, start_date, end_date):
-        dfs = []
-        # Load county data and make df with relevant data for the county
+        county_dfs = []
+        # load county data and make df with relevant data for the county
         counties = features_config.county_info
-        attributes = '&datatypeid='.join(features_config.weather_attributes)
-        for county, row in counties.iterrows():
-            # TODO Offset if 1000 entries exist
+        attributes = '&datatypeid='.join(config.weather_attributes)
+        for county in counties.index:
             result = requests.get(
                 "https://www.ncdc.noaa.gov/cdo-web/api/v2/data?"
                 "datasetid=GHCND&locationid=FIPS:{}&startdate={}&enddate={}&limit=1000"
                 "&datatypeid={}".format(
-                    str(county), str(start_date), str(end_date), attributes),
-                headers={"token": os.environ.get("WEATHER_TOKEN")})
+                    str(county), str(start_date), str(end_date), attributes
+                ),
+                headers={"token": config.weather_token}
+            )
 
             if result.status_code != 200:
                 raise ConnectionError("Unable to connect and retrieve data from NOAA. Status code:", result.status_code)
 
-            try:
-                df = pd.json_normalize(result.json(), 'results')
-                df_filtered = df[df['datatype'].isin(features_config.weather_attributes)]
-                df_filtered = df_filtered.groupby(['date', 'datatype']).agg({'value': 'mean'}).reset_index()
-                df_filtered['FIPS'] = county
-                dfs.append(df_filtered)
-            except:
-                pass  # County not found in weather dataset
-        # Join all county data
-        dfs = pd.concat(dfs)
-        # Filter dfs by day
+            result_json = result.json()
+            if result_json:
+                logging.info(f'Received data for county {county}')
+
+                df = pd.io.json.json_normalize(result_json, 'results')
+                df = df[df['datatype'].isin(config.weather_attributes)]
+                df['date'] = df['date'].str[:10]
+                df = df.groupby(['date', 'datatype']).agg({'value': 'mean'}).reset_index()
+                df['FIPS'] = county
+                county_dfs.append(df)
+
+        # join all county data
+        county_dfs = pd.concat(county_dfs, ignore_index=True)
+
+        # filter dfs by day
         dfs_per_day = []
-        dates = dfs['date'].drop_duplicates().sort_values()  # Get all dates in df
-        for date in dates:
-            dfs_per_day.append(dfs[dfs['date'] == date])
-        return TimeDependentFeatures(dfs_per_day, 'weather_data')  # TODO Add date arguments to TDF
+        dates = county_dfs['date'].drop_duplicates().sort_values()
+        for d in dates:
+            dfs_per_day.append(
+                county_dfs[county_dfs['date'] == d].pivot(
+                    index='FIPS', columns='datatype', values='value'
+                )
+            )
+
+        return TimeDependentFeatures(dfs_per_day, 'weather_data',
+                                     start_date, timedelta(1))
 
     def read_sg_social_distancing(self, start_date, end_date):
         output_dfs = []
@@ -226,9 +237,9 @@ class RawFeatureExtractor():
         for csv_file, cur_date, _ in files:
             df = pd.read_csv(csv_file, 
                     usecols=[
-                            'origin_census_block_group', 
-                            'date_range_start', 
-                            'date_range_end', 
+                            'origin_census_block_group',
+                            'date_range_start',
+                            'date_range_end',
                             'device_count',
                             'distance_traveled_from_home',
                             'completely_home_device_count',
@@ -261,12 +272,9 @@ class RawFeatureExtractor():
         return \
             TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
 
-    def read_num_cases(
-        self, start_date: date, end_date: date, are_labels=False,
-            return_countywise=False):
-        # Returns the total new cases found between start_date and end_date - 1
+    def read_num_cases(self, start_date, end_date, are_labels=False,
+                       return_countywise=False):
 
-        assert feature_type in ['TimeDependent', 'CountyWiseTimeDependent']
         if are_labels:
             assert not return_countywise
 

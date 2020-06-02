@@ -11,8 +11,6 @@ def get_county_info(county_info_link):
 
 county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
 
-config.weather_attributes = ['TMIN', 'TMAX', 'HLY-DEWP-90PCTL']
-
 config.set_static('county_info', get_county_info, county_info_link)
 
 sys.modules[__name__] = config
