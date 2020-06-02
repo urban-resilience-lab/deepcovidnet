@@ -151,10 +151,8 @@ class RawFeatureExtractor():
                     start_date, month_start, month_end, '_visits_day_'
                 ):
                     logging.info(f'Created column for {cat} on {suffix}')
-                    df[colname + suffix] = df.apply(
-                        lambda row : row[suffix[1:]] if cat == row['top_category'] else 0,
-                        axis=1
-                    )
+                    df[colname + suffix] = \
+                        df[suffix[1:]] * (df['top_category'] == cat)
 
             logging.info('Finished creating category columns')
 
@@ -164,7 +162,7 @@ class RawFeatureExtractor():
 
             common_cols = main_df.columns.intersection(df.columns)
 
-            main_df = df.merge(main_df, how='outer', suffixes=('_l', '_r'), 
+            main_df = df.merge(main_df, how='outer', suffixes=('_l', '_r'),
                 left_index=True, right_index=True)
 
             cols_to_remove = []
