@@ -9,8 +9,8 @@ import torch
 
 class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
     def __init__(
-        self, raw_features, start_date: date, interval: timedelta,
-        cur_type: str, feature_name: str
+        self, raw_features, feature_name: str, start_date: date,
+        interval: timedelta, cur_type: str
     ):
         assert cur_type in config.types
         super(CountyWiseTimeDependentFeatures, self).__init__(
