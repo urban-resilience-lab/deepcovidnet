@@ -7,6 +7,13 @@ import os
 
 config = Config('Config for DataSaver')
 
+
+def get_file_func(root, file_format):
+    return lambda d: d.strftime(
+            os.path.join(root, file_format)
+        )
+
+
 # census data
 config.census_data_root = \
     os.path.join(global_config.data_save_dir, 'sg_census_data')
@@ -22,12 +29,9 @@ config.sg_patterns_monthly_file_format = \
     '%Y-%m-%d-monthly-patterns.csv'
 
 config.get_sg_patterns_monthly_file = \
-    lambda d: d.strftime(
-            os.path.join(config.sg_patterns_monthly_root, config.sg_patterns_monthly_file_format)
-        )
+    get_file_func(config.sg_patterns_monthly_root, config.census_data_path)
 
 # social distancing data
-
 config.sg_social_distancing_root = \
     os.path.join(global_config.data_save_dir, 'social_distancing')
 
@@ -35,8 +39,19 @@ config.sg_social_distancing_file_format = \
     '%Y-%m-%d-social-distancing.csv'
 
 config.get_sg_social_distancing_file = \
-    lambda d: d.strftime(
-            os.path.join(config.sg_social_distancing_root, config.sg_social_distancing_file_format)
-        )
+    get_file_func(config.sg_social_distancing_root,
+                  config.sg_social_distancing_file_format)
+
+# weather data
+config.weather_root = \
+    os.path.join(global_config.data_save_dir, 'weather_data')
+
+config.weather_file_format = \
+    '%Y-%m-%d-weather.csv'
+
+config.get_weather_file = \
+    get_file_func(config.weather_root, config.weather_file_format)
+
+
 
 sys.modules[__name__] = config
