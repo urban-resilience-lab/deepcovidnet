@@ -16,8 +16,8 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
         super(CountyWiseTimeDependentFeatures, self).__init__(
             raw_features, feature_name, start_date, interval
         )
-        self.combined_features = [(self.raw_features, self.type)]
         self.type = cur_type
+        self.combined_features = [(self.raw_features, self.type)]
 
     def extract_torch_tensor(
         self, county_fips: str, start_date: date, end_date: date
