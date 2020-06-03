@@ -12,8 +12,6 @@ from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 
-# TODO: DEALING WITH NA VALUES
-
 
 class RawFeatureExtractor():
     def __init__(self):
