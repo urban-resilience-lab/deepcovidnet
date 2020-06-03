@@ -25,8 +25,7 @@ config.census_data_path = \
 config.sg_patterns_monthly_root = \
     os.path.join(global_config.data_save_dir, 'monthly_patterns')
 
-config.sg_patterns_monthly_file_format = \
-    '%Y-%m-%d-monthly-patterns.csv'
+config.sg_patterns_monthly_file_format = '%Y-%m-%d-monthly-patterns.csv'
 
 config.get_sg_patterns_monthly_file = \
     get_file_func(config.sg_patterns_monthly_root, config.census_data_path)
@@ -35,8 +34,7 @@ config.get_sg_patterns_monthly_file = \
 config.sg_social_distancing_root = \
     os.path.join(global_config.data_save_dir, 'social_distancing')
 
-config.sg_social_distancing_file_format = \
-    '%Y-%m-%d-social-distancing.csv'
+config.sg_social_distancing_file_format = '%Y-%m-%d-social-distancing.csv'
 
 config.get_sg_social_distancing_file = \
     get_file_func(config.sg_social_distancing_root,
@@ -46,11 +44,30 @@ config.get_sg_social_distancing_file = \
 config.weather_root = \
     os.path.join(global_config.data_save_dir, 'weather_data')
 
-config.weather_file_format = \
-    '%Y-%m-%d-weather.csv'
+config.weather_file_format = '%Y-%m-%d-weather.csv'
 
 config.get_weather_file = \
     get_file_func(config.weather_root, config.weather_file_format)
+
+# num cases data
+config.num_cases_root = \
+    os.path.join(global_config.data_save_dir, 'num_cases')
+
+config.num_cases_file_format = '%Y-%m-%d-num-cases.csv'
+
+config.get_num_cases_file = \
+    get_file_func(config.num_cases_root, config.num_cases_file_format)
+
+# countywise cumulative cases data
+config.countywise_cumulative_cases_root = \
+    os.path.join(global_config.data_save_dir, 'countywise_cum_cases')
+
+config.countywise_cumulative_cases_file_format = \
+    '%Y-%m-%d-cum-countywise-cases.csv'
+
+config.get_countywise_cumulative_cases_file = \
+    get_file_func(config.countywise_cumulative_cases_root,
+                  config.countywise_cumulative_cases_file_format)
 
 # sg mobility data
 config.sg_mobility_root = \

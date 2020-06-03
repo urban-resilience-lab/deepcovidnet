@@ -48,6 +48,27 @@ class DataSaver(RawFeatureExtractor):
             overwrite
         )
 
+    def save_num_cases(self, start_date, end_date, overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_num_cases,
+            config.num_cases_root,
+            config.get_num_cases_file,
+            overwrite
+        )
+
+    def save_countywise_cumulative_cases(self, start_date, end_date,
+                                         overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_countywise_cumulative_cases,
+            config.countywise_cumulative_cases_root,
+            config.get_countywise_cumulative_cases_file,
+            overwrite
+        )
+
     def save_sg_mobility_incoming(self, start_date, end_date, overwrite=False):
         self._save_time_dep_features(
             start_date,

@@ -27,7 +27,7 @@ class RawFeatureExtractor():
                             )
         county_df = county_df.dropna().set_index('safegraph_place_id')
 
-        # get top level category for each poi 
+        # get top level category for each poi
         cat_df = pd.DataFrame()
         for f in os.listdir(config.core_poi_path):
             if f.startswith(config.core_poi_csv_prefix):
@@ -273,12 +273,7 @@ class RawFeatureExtractor():
         return \
             TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
 
-    def read_num_cases(self, start_date, end_date, are_labels=False,
-                       return_countywise=False):
-
-        if are_labels:
-            assert not return_countywise
-
+    def read_num_cases(self, start_date, end_date, are_labels=False):
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
         ], dtype={'fips': str}).dropna().set_index('fips')
@@ -290,12 +285,9 @@ class RawFeatureExtractor():
             df_yesterday    = df[df['date'] == (cur_date - timedelta(days=1)).strftime('%Y-%m-%d')]
             df_today        = df[df['date'] == cur_date.strftime('%Y-%m-%d')]
 
-            if return_countywise:
-                cur_df = df_today.drop(['date'])
-            else:
-                cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
-                cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
-                cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
+            cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
+            cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
+            cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
 
             output_dfs.append(cur_df.fillna(0))
 
@@ -304,14 +296,30 @@ class RawFeatureExtractor():
         if are_labels:
             assert len(output_dfs) == 1
             return output_dfs[0]
-        elif return_countywise:
-            return CountyWiseTimeDependentFeatures(
-                output_dfs, 'countywise_new_cases', start_date,
-                timedelta(days=1), cur_type='CONSTANT'
-            )
         else:
             return TimeDependentFeatures(
                 output_dfs, 'new_cases', start_date, timedelta(days=1)
+            )
+
+    def read_countywise_cumulative_cases(self, start_date, end_date):
+        df = pd.read_csv(config.labels_csv_path, usecols=[
+            'date', 'fips', 'cases'
+        ], dtype={'fips': str}).dropna().set_index('fips')
+
+        output_dfs = []
+
+        cur_date = start_date
+
+        while cur_date < end_date:
+            output_dfs.append(
+                df[df['date'] == cur_date.strftime('%Y-%m-%d')].drop(['date'])
+            )
+
+            cur_date += timedelta(days=1)
+
+        return CountyWiseTimeDependentFeatures(
+                output_dfs, 'countywise_new_cases', start_date,
+                timedelta(days=1), cur_type='CONSTANT'
             )
 
     def read_sg_mobility_incoming(self, start_date, end_date):
