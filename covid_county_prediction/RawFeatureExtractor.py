@@ -200,7 +200,8 @@ class RawFeatureExtractor():
             )
 
             if result.status_code != 200:
-                raise ConnectionError("Unable to connect and retrieve data from NOAA. Status code:", result.status_code)
+                logging.error("Unable to connect and retrieve data from NOAA. Status code:", result.status_code)
+                continue
 
             result_json = result.json()
             if result_json:
