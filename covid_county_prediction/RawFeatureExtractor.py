@@ -313,10 +313,12 @@ class RawFeatureExtractor():
         cur_date = start_date
 
         while cur_date < end_date:
-            output_dfs.append(
-                df[df['date'] == cur_date.strftime('%Y-%m-%d')].drop(['date'])
-            )
-            logging.info('Processed cumulative cases for ' + str(cur_date))
+            df_today = df[df['date'] == str(cur_date)]
+            if df_today.shape[0]:
+                output_dfs.append(
+                    df_today.drop(['date']).fillna(0)
+                )
+                logging.info('Processed cumulative cases for ' + str(cur_date))
 
             cur_date += timedelta(days=1)
 
