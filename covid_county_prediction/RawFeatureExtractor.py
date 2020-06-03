@@ -316,7 +316,7 @@ class RawFeatureExtractor():
             df_today = df[df['date'] == str(cur_date)]
             if df_today.shape[0]:
                 output_dfs.append(
-                    df_today.drop(['date']).fillna(0)
+                    df_today.drop(['date'], axis=1).fillna(0)
                 )
                 logging.info('Processed cumulative cases for ' + str(cur_date))
 
