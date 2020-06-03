@@ -291,6 +291,8 @@ class RawFeatureExtractor():
 
             output_dfs.append(cur_df.fillna(0))
 
+            logging.info('Processed num cases for ' + str(cur_date))
+
             cur_date += timedelta(days=1)
 
         if are_labels:
@@ -314,6 +316,7 @@ class RawFeatureExtractor():
             output_dfs.append(
                 df[df['date'] == cur_date.strftime('%Y-%m-%d')].drop(['date'])
             )
+            logging.info('Processed cumulative cases for ' + str(cur_date))
 
             cur_date += timedelta(days=1)
 
