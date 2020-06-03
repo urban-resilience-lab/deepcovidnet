@@ -57,16 +57,21 @@ class RawFeatureExtractor():
                 df = pd.read_csv(f, dtype={'census_block_group': str})
                 logging.info(f'Successfully read {f}')
 
-                cols_to_remove = [c for c in df.columns if 'Margin of Error' in c]
+                cols_to_remove = \
+                    [c for c in df.columns if 'Margin of Error' in c]
                 df.drop(cols_to_remove, axis=1, inplace=True)
 
-                df['census_block_group'] = df['census_block_group'].apply(lambda x : x[:5])
+                df['census_block_group'] = \
+                    df['census_block_group'].apply(lambda x: x[:5])
                 df = df.groupby('census_block_group').sum()
-                main_df = main_df.merge(df, how='outer', left_index=True, right_index=True, suffixes=('', ''))
+                main_df = main_df.merge(df, how='outer', left_index=True,
+                                        right_index=True, suffixes=('', ''))
                 logging.info('Merged into main dataframe')
 
-        f = os.path.join(config.sg_open_census_metadata_path, 'cbg_field_descriptions.csv')
-        meta_df = pd.read_csv(f, usecols=['table_id', 'field_full_name']).set_index('table_id')
+        f = os.path.join(config.sg_open_census_metadata_path,
+                         'cbg_field_descriptions.csv')
+        meta_df = pd.read_csv(f, usecols=['table_id', 'field_full_name'])\
+                    .set_index('table_id')
 
         cols_dict = {}
         for idx in meta_df.index:
@@ -76,7 +81,8 @@ class RawFeatureExtractor():
 
         return ConstantFeatures(main_df, 'open_census_data')
 
-    def _get_names_starting_with(self, original_start_date, cur_start_date, cur_end_date, prefix):
+    def _get_names_starting_with(self, original_start_date, cur_start_date,
+                                 cur_end_date, prefix):
         ans = []
 
         d = cur_start_date
@@ -311,16 +317,21 @@ class RawFeatureExtractor():
         output_dfs = []
 
         cur_date = start_date
+        is_start_date_set = False
 
         while cur_date < end_date:
             df_today = df[df['date'] == str(cur_date)]
             if df_today.shape[0]:
+                if not is_start_date_set:
+                    start_date = cur_date
+                    is_start_date_set = True
+
                 output_dfs.append(
                     df_today.drop(['date'], axis=1).fillna(0)
                 )
                 logging.info('Processed cumulative cases for ' + str(cur_date))
-            else:
-                start_date = cur_date
+            elif is_start_date_set:
+                raise Exception(f'No data found for {str(cur_date)}...')
 
             cur_date += timedelta(days=1)
 
