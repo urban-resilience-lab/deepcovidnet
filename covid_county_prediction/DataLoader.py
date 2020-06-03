@@ -67,7 +67,11 @@ class DataLoader(DataSaver):
         dfs = []
         cur_date = start_date
         while(cur_date < end_date):
-            dfs.append(pd.read_csv(get_path(cur_date)).set_index('fips'))
+            dfs.append(
+                pd.read_csv(
+                    get_path(cur_date), dtype={'fips': str}
+                ).set_index('fips')
+            )
             cur_date += interval
 
         return feature_type(dfs, feature_name, start_date, interval)
