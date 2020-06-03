@@ -48,7 +48,7 @@ class DataSaver(RawFeatureExtractor):
             overwrite
         )
 
-    def read_sg_mobility_incoming(self, start_date, end_date, overwrite=False):
+    def save_sg_mobility_incoming(self, start_date, end_date, overwrite=False):
         self._save_time_dep_features(
             start_date,
             end_date,
