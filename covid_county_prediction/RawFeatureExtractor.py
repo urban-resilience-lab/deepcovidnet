@@ -344,7 +344,8 @@ class RawFeatureExtractor():
 
         output_dfs = []
 
-        for csv_file, _, _ in files:
+        for csv_file, s, _ in files:
+            start_date = min(start_date, s)
             df = pd.read_csv(csv_file,
                     usecols=[
                             'safegraph_place_id',
@@ -360,7 +361,9 @@ class RawFeatureExtractor():
                 lambda series: {k: v for d in series for k, v in d.items()}
             )  # merge dictionaries
 
-            df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(sum_county_dict)
+            df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(
+                sum_county_dict
+            )
 
             mobility_df = pd.DataFrame(
                 index=features_config.county_info.index,
@@ -376,6 +379,6 @@ class RawFeatureExtractor():
             output_dfs.append(mobility_df.fillna(0))
 
         return CountyWiseTimeDependentFeatures(
-                output_dfs, 'mobility_data', start_date, timedelta(1),
+                output_dfs, 'mobility_data', start_date, timedelta(7),
                 cur_type='CROSS'
             )
