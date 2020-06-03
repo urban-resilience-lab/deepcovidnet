@@ -319,6 +319,8 @@ class RawFeatureExtractor():
                     df_today.drop(['date'], axis=1).fillna(0)
                 )
                 logging.info('Processed cumulative cases for ' + str(cur_date))
+            else:
+                start_date = cur_date
 
             cur_date += timedelta(days=1)
 
