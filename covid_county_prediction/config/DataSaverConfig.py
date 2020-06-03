@@ -52,6 +52,14 @@ config.weather_file_format = \
 config.get_weather_file = \
     get_file_func(config.weather_root, config.weather_file_format)
 
+# sg mobility data
+config.sg_mobility_root = \
+    os.path.join(global_config.data_save_dir, 'sg_mobility')
 
+config.sg_mobility_file_format = \
+    '%Y-%m-%d-mobility.csv'
+
+config.get_sg_mobility_file = \
+    get_file_func(config.weather_root, config.weather_file_format)
 
 sys.modules[__name__] = config
