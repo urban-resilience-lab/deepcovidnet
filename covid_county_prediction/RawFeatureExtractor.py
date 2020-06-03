@@ -235,7 +235,7 @@ class RawFeatureExtractor():
         files = config.sg_social_distancing_reader.get_files_between(start_date, end_date)
 
         for csv_file, cur_date, _ in files:
-            df = pd.read_csv(csv_file, 
+            df = pd.read_csv(csv_file,
                     usecols=[
                             'origin_census_block_group',
                             'date_range_start',

@@ -48,10 +48,18 @@ class DataSaver(RawFeatureExtractor):
             overwrite
         )
 
-    def _save_time_dep_features(
-        self, start_date, end_date, get_features,
-        save_root, get_save_file, overwrite
-    ):
+    def read_sg_mobility_incoming(self, start_date, end_date, overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_sg_mobility_incoming,
+            config.sg_mobility_root,
+            config.get_sg_mobility_file,
+            overwrite
+        )
+
+    def _save_time_dep_features(self, start_date, end_date, get_features,
+                                save_root, get_save_file, overwrite):
         if not os.path.exists(save_root):
             os.mkdir(save_root)
 
