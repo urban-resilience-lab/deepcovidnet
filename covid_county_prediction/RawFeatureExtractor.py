@@ -370,7 +370,7 @@ class RawFeatureExtractor():
                         'safegraph_place_id': (lambda x: self.poi_info[x]['countyFIPS'] if x in self.poi_info else None),
                         'visitor_home_cbgs' : (lambda x: eval(x))
                     }
-            ).rename({'safesafegraph_place_id': 'fips'}).dropna()
+            ).rename(columns={'safegraph_place_id': 'fips'}).dropna()
 
             logging.info(f'Successfully read {csv_file}...')
 
