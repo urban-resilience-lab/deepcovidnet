@@ -20,7 +20,7 @@ class RawFeatureExtractor():
 
     def get_poi_info(self):
         if os.path.exists(config.poi_info_pickle_path):
-            return pickle.load(config.poi_info_pickle_path)
+            return pickle.load(open(config.poi_info_pickle_path, 'rb'))
 
         # get county code for each poi
         county_df = pd.read_csv(config.place_county_cbg_file,
