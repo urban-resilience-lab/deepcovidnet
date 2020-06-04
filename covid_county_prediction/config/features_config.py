@@ -6,7 +6,10 @@ config = Config('general features config parameters')
 
 
 def get_county_info(county_info_link):
-    return pd.read_html(county_info_link)[0].iloc[:-1].set_index('FIPS')
+    df = pd.read_html(county_info_link)[0].iloc[:-1].set_index('FIPS')
+    duplicates = df.loc[df.index.duplicated()].index
+    df = df.drop(duplicates)
+    return df
 
 
 county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
