@@ -58,7 +58,8 @@ class DataLoader(DataSaver):
             saver_config.get_countywise_cumulative_cases_file,
             self.save_countywise_cumulative_cases,
             CountyWiseTimeDependentFeatures,
-            'countywise_cumulative_cases'
+            'countywise_cumulative_cases',
+            cur_type='CONSTANT'
         )
 
     def _load_time_dep_features(self, start_date, end_date, get_path, saver,
