@@ -339,22 +339,28 @@ class RawFeatureExtractor():
             )
 
     def read_sg_mobility_incoming(self, start_date, end_date):
-        files = config.sg_patterns_weekly_reader.get_files_between(start_date, end_date)
+        files = config.sg_patterns_weekly_reader.get_files_between(start_date,
+                                                                   end_date)
 
-        def sum_county_dict(d):
+        def merge_and_sum_dict(series):
             ans = {}
-            for k, v in d.items():
-                new_k = k[:5]
-                if new_k in ans:
-                    ans[new_k] += v
-                else:
-                    ans[new_k] = v
+            for d in series:
+                for k in d:
+                    new_k = k[:5]
+                    if new_k in ans:
+                        ans[new_k] += d[k]
+                    else:
+                        ans[new_k] = d[k]
+
             return ans
 
         output_dfs = []
 
         for csv_file, s, _ in files:
             start_date = min(start_date, s)
+
+            # read csv & remove all rows for which safegraph_place_id does not
+            # have a county
             df = pd.read_csv(csv_file,
                     usecols=[
                             'safegraph_place_id',
@@ -364,20 +370,21 @@ class RawFeatureExtractor():
                         'safegraph_place_id': (lambda x: self.poi_info[x]['countyFIPS'] if x in self.poi_info else None),
                         'visitor_home_cbgs' : (lambda x: eval(x))
                     }
-            ).dropna()  # remove all rows for which safegraph_place_id does not have a county
+            ).rename({'safesafegraph_place_id': 'fips'}).dropna()
 
-            df = df.groupby('safegraph_place_id').agg(
-                lambda series: {k: v for d in series for k, v in d.items()}
+            logging.info(f'Successfully read {csv_file}...')
+
+            df = df.groupby('fips').agg(
+                merge_and_sum_dict
             )  # merge dictionaries
 
-            df['visitor_home_cbgs'] = df['visitor_home_cbgs'].apply(
-                sum_county_dict
-            )
+            logging.info(f'Successfully merged dictionaries...')
 
             mobility_df = pd.DataFrame(
                 index=features_config.county_info.index,
                 columns=features_config.county_info.index
             )
+            mobility_df.index.name = 'fips'
 
             for to_county in df.index:
                 if to_county in mobility_df:
@@ -385,6 +392,7 @@ class RawFeatureExtractor():
                         if from_county in mobility_df:
                             mobility_df.loc[to_county].loc[from_county] = traffic
 
+            logging.info(f'Found mobility index from {csv_file}...')
             output_dfs.append(mobility_df.fillna(0))
 
         return CountyWiseTimeDependentFeatures(
