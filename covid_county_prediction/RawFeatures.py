@@ -15,29 +15,33 @@ class RawFeatures(ABC):
         self.raw_features = self.process_features(raw_features)
 
     def process_features(self, raw_features):
-        return self.get_features_with_index(features_config.county_info.index, raw_features)
+        return self.get_features_with_index(features_config.county_info.index,
+                                            raw_features)
 
     def get_features_with_index(self, index, raw_features):
         index_df = pd.DataFrame(index=index)
 
-        if type(raw_features) == type([]):
+        if isinstance(raw_features, list):
             ans = []
             for df in raw_features:
                 ans.append(
-                    index_df.merge(df, how='left', left_index=True, right_index=True, suffixes=('', ''))
+                    index_df.merge(
+                        df, how='left', left_index=True,
+                        right_index=True, suffixes=('', '')
+                    )
                 )
 
-            if len(ans) > 1:
-                return ans
-            else:
-                return ans[0]
-
+            return ans
         # raw_features is a df
-        return index_df.merge(raw_features, how='left', left_index=True, right_index=True, suffixes=('', ''))
+        return index_df.merge(
+            raw_features, how='left', left_index=True,
+            right_index=True, suffixes=('', '')
+        )
 
     def keep_features_with_labels(self, labels_df):
         return self.get_features_with_index(labels_df.index, self.raw_features)
 
     @abstractmethod
-    def extract_torch_tensor(self, county_fips: str, start_date: date, end_date: date):
+    def extract_torch_tensor(self, county_fips: str, start_date: date,
+                             end_date: date):
         raise NotImplementedError()
