@@ -364,6 +364,8 @@ class RawFeatureExtractor():
 
         for csv_file, s, _ in files:
             start_date = min(start_date, s)
+            if (end_date - s).days < 7:
+                continue
 
             # read csv & remove all rows for which safegraph_place_id does not
             # have a county
