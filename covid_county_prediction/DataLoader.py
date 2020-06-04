@@ -18,7 +18,9 @@ class DataLoader(DataSaver):
             self.save_census_data
         )
 
-        df = pd.read_csv(saver_config.census_data_path).set_index('fips')
+        df = pd.read_csv(
+            saver_config.census_data_path, dtype={'fips': str}
+        ).set_index('fips')
 
         return ConstantFeatures(df, 'open_census_data')
 
