@@ -62,7 +62,7 @@ class DataLoader(DataSaver):
         )
 
     def _load_time_dep_features(self, start_date, end_date, get_path, saver,
-                                feature_type, feature_name,
+                                feature_type, feature_name, cur_type=None,
                                 interval=timedelta(1)):
         self._save_if_not_saved(get_path, saver, start_date, end_date)
 
@@ -76,7 +76,11 @@ class DataLoader(DataSaver):
             )
             cur_date += interval
 
-        return feature_type(dfs, feature_name, start_date, interval)
+        if feature_type == TimeDependentFeatures:
+            return feature_type(dfs, feature_name, start_date, interval)
+        else:
+            return feature_type(dfs, feature_name, start_date, interval,
+                                cur_type=cur_type)
 
     def _save_if_not_saved(self, saved_path_or_get_path, saver,
                            start_date=None, end_date=None):
