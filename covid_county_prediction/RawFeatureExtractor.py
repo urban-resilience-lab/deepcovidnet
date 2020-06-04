@@ -11,6 +11,7 @@ import logging
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
+import pickle
 
 
 class RawFeatureExtractor():
@@ -18,6 +19,9 @@ class RawFeatureExtractor():
         self.poi_info = self.get_poi_info()
 
     def get_poi_info(self):
+        if os.path.exists(config.poi_info_pickle_path):
+            return pickle.load(config.poi_info_pickle_path)
+
         # get county code for each poi
         county_df = pd.read_csv(config.place_county_cbg_file,
                                 usecols=['safegraph_place_id', 'countyFIPS'],
@@ -43,7 +47,9 @@ class RawFeatureExtractor():
 
         final_df = pd.concat([county_df, cat_df], axis='columns')
 
-        return final_df.to_dict(orient='index')
+        final_dict = final_df.to_dict(orient='index')
+        pickle.dump(final_dict, open(config.poi_info_pickle_path, 'wb'))
+        return final_dict
 
     def read_census_data(self):
         main_df = pd.DataFrame()
@@ -376,7 +382,7 @@ class RawFeatureExtractor():
 
             df = df.groupby('fips').agg(
                 merge_and_sum_dict
-            )  # merge dictionaries
+            )
 
             logging.info(f'Successfully merged dictionaries...')
 

@@ -102,6 +102,7 @@ config.sg_open_census_metadata_path = os.path.join(global_config.data_base_dir, 
 
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')
+config.poi_info_pickle_path = os.path.join(global_config.data_save_dir, 'poi_info.pickle')
 
 # labels
 config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
