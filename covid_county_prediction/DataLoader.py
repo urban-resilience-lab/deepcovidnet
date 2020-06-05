@@ -82,7 +82,7 @@ class DataLoader(DataSaver):
 
         dfs = []
         cur_date = start_date
-        while(cur_date < end_date):
+        while((end_date - cur_date).days >= interval.days):
             dfs.append(
                 pd.read_csv(
                     get_path(cur_date), dtype={'fips': str}
