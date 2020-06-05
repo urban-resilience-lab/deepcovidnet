@@ -24,7 +24,7 @@ class ReaderConfig(Config):
         elif self.file_granularity == 'monthly':
             self.date_offset = offsets.MonthBegin()
         elif self.file_granularity == 'weekly':
-            self.date_offset = offsets.Week(weekday=6)
+            self.date_offset = offsets.Week(weekday=0)
 
         self.file_path_format   = file_path_format
 
@@ -37,7 +37,7 @@ class ReaderConfig(Config):
         self.timezone = timezone
 
     def get_file_date(self, d):
-        if self.file_granularity == 'weekly' and d.weekday() != 6:
+        if self.file_granularity == 'weekly' and d.weekday() != 0:
             return d - self.date_offset
 
         return d
