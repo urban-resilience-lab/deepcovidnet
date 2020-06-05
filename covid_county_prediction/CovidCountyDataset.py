@@ -1,20 +1,20 @@
-from covid_county_prediction.RawFeatureExtractor import RawFeatureExtractor
+from covid_county_prediction.DataLoader import DataLoader
 from torch.utils.data import Dataset
 from datetime import timedelta
 from covid_county_prediction.FeaturesList import FeaturesList
-import covid_county_prediction.config.RawFeatureExtractorConfig as raw_feature_extractor_config
+import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import bisect
 
 
-class CovidCountyDataset(RawFeatureExtractor, Dataset):
+class CovidCountyDataset(DataLoader, Dataset):
     def __init__(self, data_start_date, data_end_date):
         super(CovidCountyDataset, self).__init__()
 
         training_data_end_date   = data_end_date
         training_data_start_date = \
             data_start_date - \
-            timedelta(days=raw_feature_extractor_config.past_days_to_consider)
+            timedelta(days=rfe_config.past_days_to_consider)
 
         self.labels_lens = []
 
@@ -25,7 +25,7 @@ class CovidCountyDataset(RawFeatureExtractor, Dataset):
             cur_labels = self.read_num_cases(d, d + timedelta(days=1), are_labels=True)
             self.labels.append(
                 (
-                    d - timedelta(days=raw_feature_extractor_config.past_days_to_consider),
+                    d - timedelta(days=rfe_config.past_days_to_consider),
                     d,
                     cur_labels
                 )
@@ -37,12 +37,13 @@ class CovidCountyDataset(RawFeatureExtractor, Dataset):
             d += timedelta(days=1)
 
         self.features = FeaturesList([
-            # self.read_census_data(),
-            # self.read_sg_patterns_monthly(training_data_start_date, training_data_end_date)
+            self.load_census_data(),
+            self.load_sg_patterns_monthly(training_data_start_date, training_data_end_date),
             # self.read_weather_data(training_data_start_date, training_data_end_date),
-            self.read_sg_social_distancing(training_data_start_date, training_data_end_date),
-            self.read_num_cases(training_data_start_date, training_data_end_date)
-            # self.read_sg_mobility_incoming(training_data_start_date, training_data_end_date)
+            self.load_sg_social_distancing(training_data_start_date, training_data_end_date),
+            self.load_num_cases(training_data_start_date, training_data_end_date),
+            self.load_sg_mobility_incoming(training_data_start_date, training_data_end_date),
+            self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
         ])
 
         assert len(self.features) == config.num_features
