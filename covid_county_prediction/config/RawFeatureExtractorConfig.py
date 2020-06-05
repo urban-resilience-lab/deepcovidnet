@@ -40,7 +40,7 @@ class ReaderConfig(Config):
         if self.file_granularity == 'weekly' and d.weekday() != 6:
             return d - self.date_offset
 
-        return d 
+        return d
 
     def get_files_between(self, start_date: date, end_date: date):
         files = set()

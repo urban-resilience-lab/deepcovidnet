@@ -1,5 +1,6 @@
 from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.DataSaverConfig as saver_config
+import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import os
 import pandas as pd
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
@@ -62,10 +63,27 @@ class DataLoader(DataSaver):
             cur_type='CONSTANT'
         )
 
+    def load_sg_mobility_incoming(self, start_date, end_date):
+        files = rfe_config.sg_patterns_weekly_reader.get_files_between(
+            start_date, end_date
+        )
+
+        real_start_date = min(start_date, files[0][1])
+
+        return self._load_time_dep_features(
+            real_start_date, end_date,
+            saver_config.get_sg_mobility_file,
+            self.save_sg_mobility_incoming,
+            CountyWiseTimeDependentFeatures,
+            'countywise_mobility',
+            cur_type='CROSS',
+            interval=timedelta(7)
+        )
+
     def _load_time_dep_features(self, start_date, end_date, get_path, saver,
                                 feature_type, feature_name, cur_type=None,
                                 interval=timedelta(1)):
-        self._save_if_not_saved(get_path, saver, start_date, end_date)
+        self._save_if_not_saved(get_path, saver, start_date, end_date, interval)
 
         dfs = []
         cur_date = start_date
@@ -84,7 +102,8 @@ class DataLoader(DataSaver):
                                 cur_type=cur_type)
 
     def _save_if_not_saved(self, saved_path_or_get_path, saver,
-                           start_date=None, end_date=None):
+                           start_date=None, end_date=None,
+                           interval=timedelta(1)):
         if isinstance(saved_path_or_get_path, str):
             if not os.path.exists(saved_path_or_get_path):
                 if start_date is None and end_date is None:
@@ -99,4 +118,4 @@ class DataLoader(DataSaver):
             while cur_date < end_date:
                 if not os.path.exists(saved_path_or_get_path(cur_date)):
                     saver(cur_date, end_date)
-                cur_date += timedelta(1)
+                cur_date += interval
