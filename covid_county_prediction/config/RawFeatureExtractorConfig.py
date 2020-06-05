@@ -78,7 +78,7 @@ class ReaderConfig(Config):
             if type(d) != date:
                 d = d.date()
 
-        return list(files)
+        return sorted(list(files), key=lambda x: x[1])
 
 
 # core poi
