@@ -28,7 +28,7 @@ config.sg_patterns_monthly_root = \
 config.sg_patterns_monthly_file_format = '%Y-%m-%d-monthly-patterns.csv'
 
 config.get_sg_patterns_monthly_file = \
-    get_file_func(config.sg_patterns_monthly_root, config.census_data_path)
+    get_file_func(config.sg_patterns_monthly_root, config.sg_patterns_monthly_file_format)
 
 # social distancing data
 config.sg_social_distancing_root = \
