@@ -77,6 +77,6 @@ config.sg_mobility_file_format = \
     '%Y-%m-%d-mobility.csv'
 
 config.get_sg_mobility_file = \
-    get_file_func(config.weather_root, config.weather_file_format)
+    get_file_func(config.sg_mobility_root, config.sg_mobility_file_format)
 
 sys.modules[__name__] = config
