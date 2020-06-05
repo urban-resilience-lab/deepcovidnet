@@ -63,7 +63,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                 elif cur_type == config.const_type:
                     features = np.squeeze(df.to_numpy(), axis=1)
 
-                tensor[i, :, feature_index] = features
+                tensor[i, :, feature_index] = torch.tensor(features)
 
         return tensor
 
