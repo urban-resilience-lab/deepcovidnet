@@ -64,14 +64,9 @@ class DataLoader(DataSaver):
         )
 
     def load_sg_mobility_incoming(self, start_date, end_date):
-        files = rfe_config.sg_patterns_weekly_reader.get_files_between(
-            start_date, end_date
-        )
-
-        real_start_date = min(start_date, files[0][1])
-
         return self._load_time_dep_features(
-            real_start_date, end_date,
+            rfe_config.sg_patterns_weekly_reader.get_file_date(start_date),
+            end_date,
             saver_config.get_sg_mobility_file,
             self.save_sg_mobility_incoming,
             CountyWiseTimeDependentFeatures,
