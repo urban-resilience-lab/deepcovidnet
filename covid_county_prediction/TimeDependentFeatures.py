@@ -21,7 +21,7 @@ class TimeDependentFeatures(RawFeatures):
         end_date = self.get_date(len(self.raw_features) - 1)
 
         if cur_date < self.start_date or not does_index_exist or\
-           (end_date - cur_date).days < self.interval:
+           (end_date - cur_date).days < self.interval.days:
             return None
 
         return int((cur_date - self.start_date) / self.interval)
