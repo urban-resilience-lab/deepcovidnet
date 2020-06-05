@@ -4,6 +4,7 @@ import covid_county_prediction.config.CountyWiseTimeDependentFeaturesConfig as\
     config
 import numpy as np
 import torch
+import logging
 
 
 class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
