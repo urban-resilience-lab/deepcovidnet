@@ -7,12 +7,27 @@ from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 from datetime import timedelta
+import time
+import logging
+
+
+def _timed_logger_decorator(f):
+    def wrapper(*args, **kwargs):
+        logging.info(f'Entering {f.__name__}')
+        t = time()
+        ans = f(*args, **kwargs)
+        t = time() - t
+        logging.info(f'Exiting {f.__name__} after {t} secs')
+        return ans
+
+    return wrapper
 
 
 class DataLoader(DataSaver):
     def __init__(self):
         super(DataLoader, self).__init__()
 
+    @_timed_logger_decorator
     def load_census_data(self):
         self._save_if_not_saved(
             saver_config.census_data_path,
@@ -25,6 +40,7 @@ class DataLoader(DataSaver):
 
         return ConstantFeatures(df, 'open_census_data')
 
+    @_timed_logger_decorator
     def load_sg_patterns_monthly(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date, saver_config.get_sg_patterns_monthly_file,
@@ -32,6 +48,7 @@ class DataLoader(DataSaver):
             'monthly_patterns'
         )
 
+    @_timed_logger_decorator
     def load_sg_social_distancing(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date, saver_config.get_sg_social_distancing_file,
@@ -39,6 +56,7 @@ class DataLoader(DataSaver):
             'social_distancing'
         )
 
+    @_timed_logger_decorator
     def load_weather_data(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date, saver_config.get_weather_file,
@@ -46,6 +64,7 @@ class DataLoader(DataSaver):
             'weather_data'
         )
 
+    @_timed_logger_decorator
     def load_num_cases(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date, saver_config.get_num_cases_file,
@@ -53,6 +72,7 @@ class DataLoader(DataSaver):
             'num_cases'
         )
 
+    @_timed_logger_decorator
     def load_countywise_cumulative_cases(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date,
@@ -63,6 +83,7 @@ class DataLoader(DataSaver):
             cur_type='CONSTANT'
         )
 
+    @_timed_logger_decorator
     def load_sg_mobility_incoming(self, start_date, end_date):
         return self._load_time_dep_features(
             rfe_config.sg_patterns_weekly_reader.get_file_date(start_date),
