@@ -31,9 +31,12 @@ class CovidCountyDataset(DataLoader, Dataset):
                 )
             )
 
-            self.labels_lens.append(
-                self.labels_lens + cur_labels.shape[0]
-            )
+            if self.labels_lens:
+                self.labels_lens.append(
+                    self.labels_lens[-1] + cur_labels.shape[0]
+                )
+            else:
+                self.labels_lens.append(cur_labels.shape[0])
             d += timedelta(days=1)
 
         self.features = FeaturesList([
