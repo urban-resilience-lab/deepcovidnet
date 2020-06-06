@@ -32,7 +32,7 @@ class CovidCountyDataset(DataLoader, Dataset):
             )
 
             self.labels_lens.append(
-                sum(self.labels_lens) + cur_labels.shape[0]
+                self.labels_lens + cur_labels.shape[0]
             )
             d += timedelta(days=1)
 
