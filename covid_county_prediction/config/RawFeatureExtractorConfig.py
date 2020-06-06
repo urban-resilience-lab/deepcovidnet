@@ -40,14 +40,17 @@ class ReaderConfig(Config):
         if self.file_granularity == 'weekly' and d.weekday() != 0:
             return d - self.date_offset
 
+        if not isinstance(d, date):
+            d = d.date()  # when d is a timestamp
+
         return d
 
     def get_files_between(self, start_date: date, end_date: date):
         files = set()
 
-        d = start_date
+        d = self.get_file_date(start_date)
         while d < end_date:
-            file_format = self.get_file_date(d).strftime(
+            file_format = d.strftime(
                 os.path.join(global_config.data_base_dir, self.file_path_format)
             )
 
