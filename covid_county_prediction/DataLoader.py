@@ -14,9 +14,9 @@ import logging
 def _timed_logger_decorator(f):
     def wrapper(*args, **kwargs):
         logging.info(f'Entering {f.__name__}')
-        t = time()
+        t = time.time()
         ans = f(*args, **kwargs)
-        t = time() - t
+        t = time.time() - t
         logging.info(f'Exiting {f.__name__} after {t} secs')
         return ans
 
