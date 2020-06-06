@@ -4,6 +4,8 @@ import covid_county_prediction.config.global_config as global_config
 import os
 from datetime import timezone, date, timedelta
 from pandas.tseries import offsets
+import pandas as pd
+
 
 config = Config('Config for RawFeatureExtractor')
 
@@ -38,10 +40,10 @@ class ReaderConfig(Config):
 
     def get_file_date(self, d):
         if self.file_granularity == 'weekly' and d.weekday() != 0:
-            return d - self.date_offset
+            d = d - self.date_offset
 
-        if not isinstance(d, date):
-            d = d.date()  # when d is a timestamp
+        if isinstance(d, pd.Timestamp):
+            d = d.date()
 
         return d
 
@@ -62,23 +64,23 @@ class ReaderConfig(Config):
                         f = os.path.join(file_format, f)
 
                         expected_end = d + self.date_offset
-                        if type(expected_end) != date:
-                            expected_end = expected_end.date()  # when it is a timezone
+                        if isinstance(expected_end, pd.Timestamp):
+                            expected_end = expected_end.date()
 
                         files.add(
                             (f, d, min(end_date, expected_end))
                         )
             elif os.path.isfile(file_format):
                 expected_end = d + self.date_offset
-                if type(expected_end) != date:
-                    expected_end = expected_end.date()  # when it is a timezone
+                if isinstance(expected_end, pd.Timestamp):
+                    expected_end = expected_end.date()
 
                 files.add(
                     (file_format, d, min(end_date, expected_end))
                 )
 
             d += self.date_offset
-            if type(d) != date:
+            if isinstance(d, pd.Timestamp):
                 d = d.date()
 
         return sorted(list(files), key=lambda x: x[1])

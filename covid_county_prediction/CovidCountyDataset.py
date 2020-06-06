@@ -22,7 +22,7 @@ class CovidCountyDataset(DataLoader, Dataset):
         d = data_start_date
         self.labels = []
         while d < data_end_date:
-            cur_labels = self.read_num_cases(d, d + timedelta(days=1), are_labels=True)
+            cur_labels = self.load_num_cases(d, d + timedelta(days=1)).raw_features[0]
             self.labels.append(
                 (
                     d - timedelta(days=rfe_config.past_days_to_consider),
