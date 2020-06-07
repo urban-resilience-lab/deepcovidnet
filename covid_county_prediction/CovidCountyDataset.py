@@ -49,6 +49,8 @@ class CovidCountyDataset(DataLoader, Dataset):
             self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
         ])
 
+        self.cache = {}
+
         assert len(self.features) == config.num_features
 
     def __len__(self):
@@ -58,6 +60,10 @@ class CovidCountyDataset(DataLoader, Dataset):
         return bisect.bisect_left(config.labels_class_boundaries, label)
 
     def __getitem__(self, idx):
+
+        if idx in self.cache:
+            return self.cache[idx]
+
         labels_idx = bisect.bisect_left(self.labels_lens, idx)
         if self.labels_lens[labels_idx] == idx:
             labels_idx += 1
@@ -71,5 +77,8 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         out[config.labels_key] = \
             self._classify_label(self.labels[labels_idx][2].iloc[idx]['new_cases'])
+
+        if idx not in self.cache:
+            self.cache[idx] = out
 
         return out
