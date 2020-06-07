@@ -55,6 +55,10 @@ class CovidRunner(BaseRunner):
 
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
+        for k in batch_dict:
+            if torch.cuda.is_available():
+                batch_dict[k] = batch_dict[k].cuda()
+
         labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 
@@ -85,6 +89,10 @@ class CovidRunner(BaseRunner):
             )
 
     def test_batch_and_get_metrics(self, batch_dict):
+        for k in batch_dict:
+            if torch.cuda.is_available():
+                batch_dict[k] = batch_dict[k].cuda()
+
         labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 
