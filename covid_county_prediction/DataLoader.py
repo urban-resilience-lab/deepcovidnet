@@ -86,8 +86,8 @@ class DataLoader(DataSaver):
     @_timed_logger_decorator
     def load_sg_mobility_incoming(self, start_date, end_date):
         d = rfe_config.sg_patterns_weekly_reader.get_file_date(start_date)
-        interval=timedelta(7)
-        
+        interval = timedelta(7)
+
         if d < start_date:
             d += interval
 
