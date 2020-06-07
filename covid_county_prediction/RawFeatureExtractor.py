@@ -321,22 +321,18 @@ class RawFeatureExtractor():
         output_dfs = []
 
         cur_date = start_date
-        is_start_date_set = False
 
         while cur_date < end_date:
             df_today = df[df['date'] == str(cur_date)]
             if df_today.shape[0]:
-                if not is_start_date_set:
-                    start_date = cur_date
-                    is_start_date_set = True
-
                 output_dfs.append(
                     df_today.drop(['date'], axis=1).fillna(0)
                 )
                 logging.info('Processed cumulative cases for ' + str(cur_date))
-            elif is_start_date_set:
-                raise Exception(f'No data found for {str(cur_date)}...')
-
+            else:
+                output_dfs.append(
+                    pd.DataFrame(0, index=df.index, columns=['cases'])
+                )
             cur_date += timedelta(days=1)
 
         return CountyWiseTimeDependentFeatures(
