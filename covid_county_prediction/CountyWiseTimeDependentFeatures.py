@@ -19,6 +19,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
         self.type = cur_type
         self.combined_features = [self]
         self.combined_start_date = self.start_date
+        self.max_interval = self.interval
 
     def extract_torch_tensor(
         self, county_fips: str, start_date: date, end_date: date
@@ -27,7 +28,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
 
         cur_date = start_date
         common_dates = []
-        while cur_date < end_date:
+        while (end_date - cur_date).days >= self.max_interval.days:
             found_all_features = True
             for feature_index in range(len(self.combined_features)):
                 if self.combined_features[feature_index].get_index(cur_date) is None:
@@ -70,5 +71,8 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
     def combine(self, other):
         self.combined_start_date = \
             min(self.combined_start_date, other.start_date)
+
+        self.max_interval = \
+            max(self.max_interval, other.interval)
 
         self.combined_features.append(other)
