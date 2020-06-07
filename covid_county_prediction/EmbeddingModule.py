@@ -29,9 +29,16 @@ class EmbeddingModule(nn.Module):
                 net = []
                 for i in range(features_dict[k].dim() - 1, 0, -1):
                     if i == 1:
-                        net.append(nn.Linear(features_dict[k].shape[i], hyperparams.embedding_size))
+                        layer = nn.Linear(features_dict[k].shape[i], hyperparams.embedding_size)
+                        if torch.cuda.is_available():
+                            layer = layer.cuda()
+
+                        net.append(layer)
                     else:
-                        net.append(nn.Linear(features_dict[k].shape[i], 1))
+                        layer = nn.Linear(features_dict[k].shape[i], 1)
+                        if torch.cuda.is_available():
+                            layer = layer.cuda()
+                        net.append(layer)
                         net.append(nn.ReLU())
                         net.append(SqueezeLastDim())
 
