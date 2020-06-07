@@ -36,7 +36,7 @@ class DataLoader(DataSaver):
 
         df = pd.read_csv(
             saver_config.census_data_path, dtype={'fips': str}
-        ).set_index('fips')
+        ).set_index('fips').fillna(0)
 
         return ConstantFeatures(df, 'open_census_data')
 
