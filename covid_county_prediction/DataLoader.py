@@ -36,7 +36,7 @@ class DataLoader(DataSaver):
 
         df = pd.read_csv(
             saver_config.census_data_path, dtype={'fips': str}
-        ).set_index('fips')
+        ).set_index('fips').fillna(0)
 
         return ConstantFeatures(df, 'open_census_data')
 
@@ -85,15 +85,21 @@ class DataLoader(DataSaver):
 
     @_timed_logger_decorator
     def load_sg_mobility_incoming(self, start_date, end_date):
+        d = rfe_config.sg_patterns_weekly_reader.get_file_date(start_date)
+        interval=timedelta(7)
+        
+        if d < start_date:
+            d += interval
+
         return self._load_time_dep_features(
-            rfe_config.sg_patterns_weekly_reader.get_file_date(start_date),
+            d,
             end_date,
             saver_config.get_sg_mobility_file,
             self.save_sg_mobility_incoming,
             CountyWiseTimeDependentFeatures,
             'countywise_mobility',
             cur_type='CROSS',
-            interval=timedelta(7)
+            interval=interval
         )
 
     def _load_time_dep_features(self, start_date, end_date, get_path, saver,

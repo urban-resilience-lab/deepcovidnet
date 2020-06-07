@@ -6,6 +6,17 @@ import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 
 
+def _check_no_nan_input(f):
+    def wrapper(s, batch_dict):
+        for k in batch_dict:
+            if k != dataset_config.labels_key:
+                assert (batch_dict[k] == batch_dict[k]).all(), f'{k} has nan/inf elements'
+
+        return f(s, batch_dict)
+
+    return wrapper
+
+
 class CovidRunner(BaseRunner):
     def __init__(self, load_path=None):
         net = CovidModule()
@@ -53,6 +64,7 @@ class CovidRunner(BaseRunner):
         else:
             return metrics
 
+    @_check_no_nan_input
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
         for k in batch_dict:
@@ -88,6 +100,7 @@ class CovidRunner(BaseRunner):
                 weight_decay=hyperparams.weight_decay
             )
 
+    @_check_no_nan_input
     def test_batch_and_get_metrics(self, batch_dict):
         for k in batch_dict:
             if torch.cuda.is_available():

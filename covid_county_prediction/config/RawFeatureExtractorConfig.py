@@ -51,6 +51,11 @@ class ReaderConfig(Config):
         files = set()
 
         d = self.get_file_date(start_date)
+        if d < start_date:
+            d += self.date_offset
+            if isinstance(d, pd.Timestamp):
+                d = d.date()
+
         while d < end_date:
             file_format = d.strftime(
                 os.path.join(global_config.data_base_dir, self.file_path_format)

@@ -11,6 +11,7 @@ import os
 from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
 import warnings
+import logging
 
 
 class BaseRunner(metaclass=ABCMeta):
@@ -55,7 +56,7 @@ class BaseRunner(metaclass=ABCMeta):
         d = torch.load(path)
         try:
             model.load_state_dict(d['state_dict'])
-            print('Loading ' + d['arch'] + ' where ' + \
+            logging.info('Loading ' + d['arch'] + ' where ' + \
                 d['best_metric_name'] + ' was ' + \
                 str(d['best_metric_val']) + '...')
             if(d['best_metric_name'] == self.best_metric_name):

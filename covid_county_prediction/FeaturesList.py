@@ -31,6 +31,6 @@ class FeaturesList():
             tensors[self.features[i].feature_name + f'_{str(i).zfill(2)}_' + self.features[i].__class__.__name__] = \
                 self.features[i].extract_torch_tensor(
                     county_fips, start_date, end_date
-                )
+                ).float()
 
         return tensors
