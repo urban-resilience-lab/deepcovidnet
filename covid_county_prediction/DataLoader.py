@@ -91,8 +91,6 @@ class DataLoader(DataSaver):
         if d < start_date:
             d += interval
 
-        print(d)
-        
         return self._load_time_dep_features(
             d,
             end_date,
