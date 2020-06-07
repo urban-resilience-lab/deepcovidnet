@@ -70,6 +70,6 @@ class CovidCountyDataset(DataLoader, Dataset):
             )
 
         out[config.labels_key] = \
-            self._classify_label(self.labels[labels_idx][2].iloc[idx]['new_cases'])
+            self._classify_label(self.labels[labels_idx][2].iloc[df_idx]['new_cases'])
 
         return out
