@@ -93,10 +93,10 @@ class CovidRunner(BaseRunner):
         return metrics
 
     def get_optimizer(self, params):
-        return torch.optim.SGD(
+        return torch.optim.Adam(
                 params,
                 lr=hyperparams.lr,
-                momentum=hyperparams.momentum,
+                # momentum=hyperparams.momentum,
                 weight_decay=hyperparams.weight_decay
             )
 
