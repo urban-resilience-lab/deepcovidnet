@@ -57,6 +57,9 @@ class DeepFM(nn.Module):
                     ).squeeze()
                 idx += 1
 
+        if torch.cuda.is_available():
+            second_order_interactions = second_order_interactions.cuda()
+
         # Deep Part
         concatenated_features = [features_dict[sorted_keys[i]] for i in range(len(sorted_keys))]
         concatenated_features = torch.cat(concatenated_features, dim=1)
