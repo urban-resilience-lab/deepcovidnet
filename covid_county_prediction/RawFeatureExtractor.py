@@ -91,6 +91,9 @@ class RawFeatureExtractor():
 
         main_df = main_df.rename(columns=cols_dict)
 
+        cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
+        main_df.drop(cols_to_remove, axis=1, inplace=True)
+
         return ConstantFeatures(main_df, 'open_census_data',
                                 feature_saver=saver_config.census_data)
 
