@@ -13,7 +13,7 @@ class RawFeatures(ABC):
         '''
         self.feature_name = feature_name
         self.raw_features = self.process_features(raw_features)
-        self.feature_saver = features_saver
+        self.feature_saver = feature_saver
 
     def process_features(self, raw_features):
         return self.get_features_with_index(features_config.county_info.index,
