@@ -57,7 +57,7 @@ class TimeDependentFeatures(RawFeatures):
             self.raw_features[i] = (self.raw_features[i] - mean) / std
 
     def save_pickled_mean_std(self, mean_pickle_path, std_pickle_path):
-        concatenated = pd.concat([self.raw_features])
+        concatenated = pd.concat(self.raw_features)
         mean = concatenated.mean()
         std  = concatenated.std()
 
