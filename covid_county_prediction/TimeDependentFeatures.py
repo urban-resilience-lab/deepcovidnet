@@ -1,6 +1,8 @@
 from covid_county_prediction.RawFeatures import RawFeatures
 from datetime import date, timedelta
 import torch
+import pickle
+import pandas as pd
 
 
 class TimeDependentFeatures(RawFeatures):
@@ -41,3 +43,18 @@ class TimeDependentFeatures(RawFeatures):
                 tensor[i - start_idx] = torch.tensor(np_tensor)
 
         return tensor
+
+    def normalize(self, mean_pickle_path, std_pickle_path):
+        mean = pickle.load(open(mean_pickle_path, 'rb'))
+        std  = pickle.load(open(std_pickle_path, 'rb'))
+
+        for i in range(len(self.raw_features)):
+            self.raw_features[i] = (self.raw_features[i] - mean) / std
+
+    def save_pickled_mean_std(self, mean_pickle_path, std_pickle_path):
+        concatenated = pd.concat([self.raw_features])
+        mean = concatenated.mean()
+        std  = concatenated.std()
+
+        pickle.dump(mean, open(mean_pickle_path, 'wb'))
+        pickle.dump(std, open(std_pickle_path, 'wb'))

@@ -12,3 +12,12 @@ class ConstantFeatures(RawFeatures):
             return torch.tensor(self.raw_features.loc[county_fips].to_numpy())
 
         return torch.zeros(self.raw_features.shape[1])
+
+    def normalize(self, fill_na=True):
+        mean = self.raw_features.mean()
+        std  = self.raw_features.std()
+
+        self.raw_features = (self.raw_features - mean) / std
+
+        if fill_na:
+            self.raw_features = self.raw_features.fillna(0)
