@@ -61,10 +61,6 @@ class RawFeatureExtractor():
                 df = pd.read_csv(f, dtype={'census_block_group': str})
                 logging.info(f'Successfully read {f}')
 
-                cols_to_remove = \
-                    [c for c in df.columns if 'Margin of Error' in c]
-                df.drop(cols_to_remove, axis=1, inplace=True)
-
                 df['census_block_group'] = \
                     df['census_block_group'].apply(lambda x: x[:5])
                 df = df.groupby('census_block_group').sum()
@@ -82,6 +78,9 @@ class RawFeatureExtractor():
             cols_dict[idx] = meta_df.loc[idx]['field_full_name']
 
         main_df = main_df.rename(columns=cols_dict)
+
+        cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
+        main_df.drop(cols_to_remove, axis=1, inplace=True)
 
         return ConstantFeatures(main_df, 'open_census_data')
 
