@@ -8,8 +8,8 @@ import os
 
 class TimeDependentFeatures(RawFeatures):
     def __init__(self, raw_features, feature_name: str, start_date: date,
-                 interval: timedelta):
-        super(TimeDependentFeatures, self).__init__(raw_features, feature_name)
+                 interval: timedelta, feature_saver):
+        super(TimeDependentFeatures, self).__init__(raw_features, feature_name, feature_saver)
         self.start_date = start_date
         self.interval   = interval
 
@@ -45,21 +45,20 @@ class TimeDependentFeatures(RawFeatures):
 
         return tensor
 
-    def normalize(self, mean_pickle_path, std_pickle_path):
-        if (not os.path.exists(mean_pickle_path)) or \
-           (not os.path.exists(std_pickle_path)):
-            self.save_pickled_mean_std(mean_pickle_path, std_pickle_path)
+    def normalize(self):
+        assert os.path.exists(self.feature_saver.mean_path) and \
+           os.path.exists(self.feature_saver.std_path)
 
-        mean = pickle.load(open(mean_pickle_path, 'rb'))
-        std  = pickle.load(open(std_pickle_path, 'rb'))
+        mean = pickle.load(open(self.feature_saver.mean_path, 'rb'))
+        std  = pickle.load(open(self.feature_saver.std_path, 'rb'))
 
         for i in range(len(self.raw_features)):
             self.raw_features[i] = (self.raw_features[i] - mean) / std
 
-    def save_pickled_mean_std(self, mean_pickle_path, std_pickle_path):
+    def save_pickled_mean_std(self):
         concatenated = pd.concat(self.raw_features)
         mean = concatenated.mean()
         std  = concatenated.std()
 
-        pickle.dump(mean, open(mean_pickle_path, 'wb'))
-        pickle.dump(std, open(std_pickle_path, 'wb'))
+        pickle.dump(mean, open(self.feature_saver.mean_path, 'wb'))
+        pickle.dump(std, open(self.feature_saver.std_path, 'wb'))

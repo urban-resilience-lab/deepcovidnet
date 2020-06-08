@@ -10,11 +10,11 @@ import logging
 class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
     def __init__(
         self, raw_features, feature_name: str, start_date: date,
-        interval: timedelta, cur_type: str
+        interval: timedelta, cur_type: str, feature_saver
     ):
         assert cur_type in config.types
         super(CountyWiseTimeDependentFeatures, self).__init__(
-            raw_features, feature_name, start_date, interval
+            raw_features, feature_name, start_date, interval, feature_saver
         )
         self.type = cur_type
         self.combined_features = [self]

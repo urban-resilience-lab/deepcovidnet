@@ -4,8 +4,8 @@ from datetime import date
 
 
 class ConstantFeatures(RawFeatures):
-    def __init__(self, raw_features, feature_name: str):
-        super(ConstantFeatures, self).__init__(raw_features, feature_name)
+    def __init__(self, raw_features, feature_name: str, feature_saver):
+        super(ConstantFeatures, self).__init__(raw_features, feature_name, feature_saver)
 
     def extract_torch_tensor(self, county_fips: str, start_date: date, end_date: date):
         if county_fips in self.raw_features.index:
