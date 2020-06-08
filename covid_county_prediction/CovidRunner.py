@@ -23,6 +23,7 @@ class CovidRunner(BaseRunner):
         self.is_optimizer_set = False
 
         if torch.cuda.is_available():
+            print('GPU ACCSES GRANTED')
             net = net.cuda()
 
         optimizer = self.get_optimizer(
@@ -56,7 +57,7 @@ class CovidRunner(BaseRunner):
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
             ('gt_mean', gt_mean),
-            ('gt_mean', gt_std)
+            ('gt_std', gt_std)
         ]
 
         if get_loss:
