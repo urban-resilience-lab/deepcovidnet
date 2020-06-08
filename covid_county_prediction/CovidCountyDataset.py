@@ -5,6 +5,9 @@ from covid_county_prediction.FeaturesList import FeaturesList
 import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import bisect
+import pickle
+import os
+from tqdm import tqdm
 
 
 class CovidCountyDataset(DataLoader, Dataset):
@@ -15,6 +18,9 @@ class CovidCountyDataset(DataLoader, Dataset):
         training_data_start_date = \
             data_start_date - \
             timedelta(days=rfe_config.past_days_to_consider)
+
+        self.start_date = data_start_date
+        self.end_date   = data_end_date
 
         self.labels_lens = []
 
@@ -56,6 +62,13 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         self.cache = {}
 
+        saved_cache_path = config.get_cached_tensors_path(
+                                self.start_date, self.end_date
+                            )
+
+        if os.path.exists(saved_cache_path):
+            self.cache = pickle.load(saved_cache_path)
+
         assert len(self.features) == config.num_features
 
     def __len__(self):
@@ -64,8 +77,18 @@ class CovidCountyDataset(DataLoader, Dataset):
     def _classify_label(self, label):
         return bisect.bisect_left(config.labels_class_boundaries, label)
 
-    def __getitem__(self, idx):
+    def save_cache_on_disk(self):
+        for i in tqdm(range(len(self))):
+            self[i]  # results are automatically cached
 
+        assert self.cache == len(self)  # ensure cache is filled
+
+        save_path = config.get_cached_tensors_path(
+                        self.start_date, self.end_date
+                    )
+        pickle.dump(self.cache, open(save_path, 'wb'))
+
+    def __getitem__(self, idx):
         if idx in self.cache:
             return self.cache[idx]
 
