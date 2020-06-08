@@ -331,7 +331,7 @@ class RawFeatureExtractor():
                 logging.info('Processed cumulative cases for ' + str(cur_date))
             else:
                 output_dfs.append(
-                    pd.DataFrame(0, index=df.index, columns=['cases'])
+                    pd.DataFrame(0, index=df.index.drop_duplicates(), columns=['cases'])
                 )
             cur_date += timedelta(days=1)
 
