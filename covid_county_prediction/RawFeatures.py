@@ -6,13 +6,14 @@ from datetime import date
 
 
 class RawFeatures(ABC):
-    def __init__(self, raw_features, feature_name: str):
+    def __init__(self, raw_features, feature_name: str, feature_saver):
         '''
         Args:
             raw_features: a list of Dataframes or just a Dataframe
         '''
         self.feature_name = feature_name
         self.raw_features = self.process_features(raw_features)
+        self.feature_saver = features_saver
 
     def process_features(self, raw_features):
         return self.get_features_with_index(features_config.county_info.index,

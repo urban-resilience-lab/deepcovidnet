@@ -12,19 +12,18 @@ class DataSaver(RawFeatureExtractor):
         super(DataSaver, self).__init__()
 
     def save_census_data(self, overwrite=False):
-        if not os.path.exists(config.census_data_root):
-            os.mkdir(config.census_data_root)
+        if not os.path.exists(config.census_data.root):
+            os.mkdir(config.census_data.root)
 
         df = self.read_census_data().raw_features
-        self._save_df(config.census_data_path, df, overwrite)
+        self._save_df(config.census_data.save_file, df, overwrite)
 
     def save_sg_patterns_monthly(self, start_date, end_date, overwrite=False):
         self._save_time_dep_features(
             start_date,
             end_date,
             self.read_sg_patterns_monthly,
-            config.sg_patterns_monthly_root,
-            config.get_sg_patterns_monthly_file,
+            config.sg_patterns_monthly,
             overwrite
         )
 
@@ -33,8 +32,7 @@ class DataSaver(RawFeatureExtractor):
             start_date,
             end_date,
             self.read_sg_social_distancing,
-            config.sg_social_distancing_root,
-            config.get_sg_social_distancing_file,
+            config.sg_social_distancing,
             overwrite
         )
 
@@ -43,8 +41,7 @@ class DataSaver(RawFeatureExtractor):
             start_date,
             end_date,
             self.read_weather_data,
-            config.weather_root,
-            config.get_weather_file,
+            config.weather,
             overwrite
         )
 
@@ -53,8 +50,7 @@ class DataSaver(RawFeatureExtractor):
             start_date,
             end_date,
             self.read_num_cases,
-            config.num_cases_root,
-            config.get_num_cases_file,
+            config.num_cases,
             overwrite
         )
 
@@ -64,8 +60,7 @@ class DataSaver(RawFeatureExtractor):
             start_date,
             end_date,
             self.read_countywise_cumulative_cases,
-            config.countywise_cumulative_cases_root,
-            config.get_countywise_cumulative_cases_file,
+            config.countywise_cumulative_cases,
             overwrite
         )
 
@@ -74,20 +69,19 @@ class DataSaver(RawFeatureExtractor):
             start_date,
             end_date,
             self.read_sg_mobility_incoming,
-            config.sg_mobility_root,
-            config.get_sg_mobility_file,
+            config.sg_mobility,
             overwrite
         )
 
     def _save_time_dep_features(self, start_date, end_date, get_features,
-                                save_root, get_save_file, overwrite):
-        if not os.path.exists(save_root):
-            os.mkdir(save_root)
+                                saver_config, overwrite):
+        if not os.path.exists(saver_config.root):
+            os.mkdir(saver_config.root)
 
         features = get_features(start_date, end_date)
 
         for i in range(len(features.raw_features)):
-            save_file = get_save_file(features.get_date(i))
+            save_file = saver_config.get_file_func()(features.get_date(i))
             self._save_df(save_file, features.raw_features[i], overwrite)
 
     def _save_df(self, save_file, df, overwrite=False):

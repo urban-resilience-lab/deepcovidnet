@@ -7,6 +7,7 @@ import string
 import requests
 from datetime import date, timedelta
 import covid_county_prediction.config.features_config as features_config
+import covid_county_prediction.config.DataSaverConfig as saver_config
 import logging
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
@@ -36,7 +37,7 @@ class RawFeatureExtractor():
                 f = os.path.join(config.core_poi_path, f)
                 temp_df = pd.read_csv(f, usecols=['safegraph_place_id', 'top_category'])
                 temp_df['top_category'] = temp_df['top_category'].apply(
-                    lambda cat: cat 
+                    lambda cat: cat
                                 if cat in config.whitelisted_cats
                                 else config.default_cat
                 )
@@ -50,6 +51,17 @@ class RawFeatureExtractor():
         final_dict = final_df.to_dict(orient='index')
         pickle.dump(final_dict, open(config.poi_info_pickle_path, 'wb'))
         return final_dict
+
+    def _get_names_starting_with(self, original_start_date, cur_start_date,
+                                 cur_end_date, prefix):
+        ans = []
+
+        d = cur_start_date
+        while d < cur_end_date:
+            ans.append(prefix + str((d - original_start_date).days))
+            d += timedelta(days=1)
+
+        return ans
 
     def read_census_data(self):
         main_df = pd.DataFrame()
@@ -82,18 +94,8 @@ class RawFeatureExtractor():
         cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
         main_df.drop(cols_to_remove, axis=1, inplace=True)
 
-        return ConstantFeatures(main_df, 'open_census_data')
-
-    def _get_names_starting_with(self, original_start_date, cur_start_date,
-                                 cur_end_date, prefix):
-        ans = []
-
-        d = cur_start_date
-        while d < cur_end_date:
-            ans.append(prefix + str((d - original_start_date).days))
-            d += timedelta(days=1)
-
-        return ans
+        return ConstantFeatures(main_df, 'open_census_data',
+                                feature_saver=saver_config.census_data)
 
     def read_sg_patterns_monthly(self, start_date, end_date):
         files = config.sg_patterns_monthly_reader.get_files_between(
@@ -191,7 +193,9 @@ class RawFeatureExtractor():
             output_dfs.append(main_df[cols].rename(columns=renamed_cols))
 
         return \
-            TimeDependentFeatures(output_dfs, 'sg_patterns_monthly', start_date, timedelta(days=1))
+            TimeDependentFeatures(output_dfs, 'sg_patterns_monthly', start_date, 
+                                  timedelta(days=1),
+                                  feature_saver=saver_config.sg_patterns_monthly)
 
     def read_weather_data(self, start_date, end_date):
         county_dfs = []
@@ -237,7 +241,8 @@ class RawFeatureExtractor():
             )
 
         return TimeDependentFeatures(dfs_per_day, 'weather_data',
-                                     start_date, timedelta(1))
+                                     start_date, timedelta(1),
+                                     feature_saver=saver_config.weather)
 
     def read_sg_social_distancing(self, start_date, end_date):
         output_dfs = []
@@ -280,7 +285,9 @@ class RawFeatureExtractor():
             output_dfs.append(df.dropna())
 
         return \
-            TimeDependentFeatures(output_dfs, 'sg_social_distancing', start_date, timedelta(days=1))
+            TimeDependentFeatures(output_dfs, 'sg_social_distancing',
+                                  start_date, timedelta(days=1),
+                                  feature_saver=saver_config.sg_social_distancing)
 
     def read_num_cases(self, start_date, end_date, are_labels=False):
         df = pd.read_csv(config.labels_csv_path, usecols=[
@@ -309,7 +316,8 @@ class RawFeatureExtractor():
             return output_dfs[0]
         else:
             return TimeDependentFeatures(
-                output_dfs, 'new_cases', start_date, timedelta(days=1)
+                output_dfs, 'new_cases', start_date, timedelta(days=1),
+                feature_saver=saver_config.num_cases
             )
 
     def read_countywise_cumulative_cases(self, start_date, end_date):
@@ -336,7 +344,8 @@ class RawFeatureExtractor():
 
         return CountyWiseTimeDependentFeatures(
                 output_dfs, 'countywise_new_cases', start_date,
-                timedelta(days=1), cur_type='CONSTANT'
+                timedelta(days=1), cur_type='CONSTANT',
+                feature_saver=saver_config.countywise_cumulative_cases
             )
 
     def read_sg_mobility_incoming(self, start_date, end_date):
@@ -400,5 +409,6 @@ class RawFeatureExtractor():
 
         return CountyWiseTimeDependentFeatures(
                 output_dfs, 'mobility_data', start_date, timedelta(7),
-                cur_type='CROSS'
+                cur_type='CROSS',
+                feature_saver=saver_config.sg_mobility
             )

@@ -39,7 +39,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                 self.labels_lens.append(cur_labels.shape[0])
             d += timedelta(days=1)
 
-        self.features = FeaturesList([
+        features = [
             self.load_census_data(),
             self.load_sg_patterns_monthly(training_data_start_date, training_data_end_date),
             # self.read_weather_data(training_data_start_date, training_data_end_date),
@@ -47,7 +47,12 @@ class CovidCountyDataset(DataLoader, Dataset):
             self.load_num_cases(training_data_start_date, training_data_end_date),
             self.load_sg_mobility_incoming(training_data_start_date, training_data_end_date),
             self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
-        ])
+        ]
+
+        for i in range(len(features)):
+            features[i].normalize()
+
+        self.features = FeaturesList(features)
 
         self.cache = {}
 
