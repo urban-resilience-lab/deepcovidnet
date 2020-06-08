@@ -86,7 +86,8 @@ class CovidCountyDataset(DataLoader, Dataset):
         save_path = config.get_cached_tensors_path(
                         self.start_date, self.end_date
                     )
-        pickle.dump(self.cache, open(save_path, 'wb'))
+        with open(save_path, 'wb') as f:
+            pickle.dump(self.cache, f)
 
     def __getitem__(self, idx):
         if idx in self.cache:

@@ -21,7 +21,9 @@ class RawFeatureExtractor():
 
     def get_poi_info(self):
         if os.path.exists(config.poi_info_pickle_path):
-            return pickle.load(open(config.poi_info_pickle_path, 'rb'))
+            with open(config.poi_info_pickle_path, 'rb') as f:
+                ans = pickle.load(f)
+            return ans
 
         # get county code for each poi
         county_df = pd.read_csv(config.place_county_cbg_file,
@@ -49,7 +51,10 @@ class RawFeatureExtractor():
         final_df = pd.concat([county_df, cat_df], axis='columns')
 
         final_dict = final_df.to_dict(orient='index')
-        pickle.dump(final_dict, open(config.poi_info_pickle_path, 'wb'))
+
+        with open(config.poi_info_pickle_path, 'wb') as f:
+            pickle.dump(final_dict, f)
+
         return final_dict
 
     def _get_names_starting_with(self, original_start_date, cur_start_date,

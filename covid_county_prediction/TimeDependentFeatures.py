@@ -49,8 +49,10 @@ class TimeDependentFeatures(RawFeatures):
         assert os.path.exists(self.feature_saver.mean_path) and \
            os.path.exists(self.feature_saver.std_path)
 
-        mean = pickle.load(open(self.feature_saver.mean_path, 'rb'))
-        std  = pickle.load(open(self.feature_saver.std_path, 'rb'))
+        with open(self.feature_saver.mean_path, 'rb') as f:
+            mean = pickle.load()
+        with open(self.feature_saver.std_path, 'rb') as f:
+            std  = pickle.load(f)
 
         for i in range(len(self.raw_features)):
             self.raw_features[i] = (self.raw_features[i] - mean) / std
@@ -60,5 +62,8 @@ class TimeDependentFeatures(RawFeatures):
         mean = concatenated.mean()
         std  = concatenated.std()
 
-        pickle.dump(mean, open(self.feature_saver.mean_path, 'wb'))
-        pickle.dump(std, open(self.feature_saver.std_path, 'wb'))
+        with open(self.feature_saver.mean_path, 'wb') as f:
+            pickle.dump(mean, f)
+
+        with open(self.feature_saver.std_path, 'wb') as f:
+            pickle.dump(std, f)
