@@ -45,7 +45,7 @@ class DataLoader(DataSaver):
     @_timed_logger_decorator
     def load_sg_patterns_monthly(self, start_date, end_date):
         return self._load_time_dep_features(
-            start_date, end_date, saver_config.sg_patterns_monthly.get_file_func,
+            start_date, end_date, saver_config.sg_patterns_monthly.get_file_func(),
             self.save_sg_patterns_monthly, TimeDependentFeatures,
             'monthly_patterns',
             feature_saver=saver_config.sg_patterns_monthly
@@ -54,7 +54,7 @@ class DataLoader(DataSaver):
     @_timed_logger_decorator
     def load_sg_social_distancing(self, start_date, end_date):
         return self._load_time_dep_features(
-            start_date, end_date, saver_config.sg_social_distancing.get_file_func,
+            start_date, end_date, saver_config.sg_social_distancing.get_file_func(),
             self.save_sg_social_distancing, TimeDependentFeatures,
             'social_distancing',
             feature_saver=saver_config.sg_social_distancing
@@ -63,7 +63,7 @@ class DataLoader(DataSaver):
     @_timed_logger_decorator
     def load_weather_data(self, start_date, end_date):
         return self._load_time_dep_features(
-            start_date, end_date, saver_config.weather.get_file_func,
+            start_date, end_date, saver_config.weather.get_file_func(),
             self.save_weather_data, TimeDependentFeatures,
             'weather_data',
             feature_saver=saver_config.weather
@@ -72,7 +72,7 @@ class DataLoader(DataSaver):
     @_timed_logger_decorator
     def load_num_cases(self, start_date, end_date):
         return self._load_time_dep_features(
-            start_date, end_date, saver_config.num_cases.get_file_func,
+            start_date, end_date, saver_config.num_cases.get_file_func(),
             self.save_num_cases, TimeDependentFeatures,
             'num_cases',
             feature_saver=saver_config.num_cases
@@ -82,7 +82,7 @@ class DataLoader(DataSaver):
     def load_countywise_cumulative_cases(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date,
-            saver_config.countywise_cumulative_cases.get_file_func,
+            saver_config.countywise_cumulative_cases.get_file_func(),
             self.save_countywise_cumulative_cases,
             CountyWiseTimeDependentFeatures,
             'countywise_cumulative_cases',
@@ -101,7 +101,7 @@ class DataLoader(DataSaver):
         return self._load_time_dep_features(
             d,
             end_date,
-            saver_config.sg_mobility.get_file_func,
+            saver_config.sg_mobility.get_file_func(),
             self.save_sg_mobility_incoming,
             CountyWiseTimeDependentFeatures,
             'countywise_mobility',
