@@ -3,6 +3,7 @@ from datetime import date, timedelta
 import torch
 import pickle
 import pandas as pd
+import os
 
 
 class TimeDependentFeatures(RawFeatures):
@@ -45,6 +46,10 @@ class TimeDependentFeatures(RawFeatures):
         return tensor
 
     def normalize(self, mean_pickle_path, std_pickle_path):
+        if (not os.path.exists(mean_pickle_path)) or \
+           (not os.path.exists(std_pickle_path)):
+            self.save_pickled_mean_std(mean_pickle_path, std_pickle_path)
+
         mean = pickle.load(open(mean_pickle_path, 'rb'))
         std  = pickle.load(open(std_pickle_path, 'rb'))
 
