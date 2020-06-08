@@ -16,8 +16,10 @@ class FeatureSaver:
 
         if self.time_dependence:
             self.file_format = f'%Y-%m-%d-{self.keyword}.csv'
-            self.mean_path = f'{self.keyword}-mean.pickle'
-            self.std_path = f'{self.keyword}-std.pickle'
+            self.mean_path = os.path.join(self.root,
+                                          f'{self.keyword}-mean.pickle')
+            self.std_path = os.path.join(self.root,
+                                         f'{self.keyword}-std.pickle')
             self.save_file = None
         else:
             self.file_format = f'{self.keyword}.csv'
