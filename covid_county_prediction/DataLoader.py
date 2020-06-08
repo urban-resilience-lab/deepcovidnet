@@ -9,7 +9,6 @@ from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 from datetime import timedelta
 import time
 import logging
-import covid_county_prediction.config.DataSaverConfig as saver_config
 
 
 def _timed_logger_decorator(f):
