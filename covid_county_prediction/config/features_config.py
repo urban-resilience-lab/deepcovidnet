@@ -12,8 +12,24 @@ def get_county_info(county_info_link):
     return df
 
 
+def get_iloc_to_county(county_df):
+    ans = []
+    for i in range(county_df.shape[0]):
+        ans.append(county_df.iloc[i].name)
+    return ans
+
+
+def get_county_name_to_iloc(county_df):
+    ans = {}
+    for i in range(county_df.shape[0]):
+        ans[county_df.iloc[i].name] = i
+    return ans
+
 county_info_link = 'https://www.nrcs.usda.gov/wps/portal/nrcs/detail/national/home/?cid=nrcs143_013697'
 
 config.set_static('county_info', get_county_info, county_info_link)
+config.set_static('iloc_to_county', get_iloc_to_county, config.county_info)
+config.set_static('county_to_iloc', get_county_name_to_iloc, config.county_info)
+
 
 sys.modules[__name__] = config
