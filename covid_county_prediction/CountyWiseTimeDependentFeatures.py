@@ -55,7 +55,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                 date_index = \
                     self.combined_features[feature_index].get_index(common_date)
 
-                df = self.combined_features[feature_index].raw_features[date_index].fillna(0)
+                df = self.combined_features[feature_index].raw_features[date_index]
                 cur_type = self.combined_features[feature_index].type
 
                 if cur_type == config.cross_type:
