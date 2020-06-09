@@ -102,7 +102,7 @@ def main():
 
         runner.test(test_loader)
 
-    elif args.mode == 'cache'
+    elif args.mode == 'cache':
         train_dataset, val_dataset, test_dataset = \
             get_train_val_test_datasets(start_date, end_date)
 
