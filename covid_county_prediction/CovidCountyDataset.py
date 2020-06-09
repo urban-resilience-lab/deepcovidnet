@@ -4,6 +4,7 @@ from datetime import timedelta
 from covid_county_prediction.FeaturesList import FeaturesList
 import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
+import covid_county_prediction.config.features_config as features_config
 import bisect
 import os
 from tqdm import tqdm
@@ -80,6 +81,10 @@ class CovidCountyDataset(DataLoader, Dataset):
         if os.path.exists(saved_cache_path):
             self.cache = torch.load(saved_cache_path)
 
+        self.labels_ilocs = []
+        for i in range(features_config.county_info.shape[0]):
+            self.labels_ilocs.append(features_config.county_info.iloc[i].name)
+
         assert len(self.features) == config.num_features
 
     def __len__(self):
@@ -92,7 +97,7 @@ class CovidCountyDataset(DataLoader, Dataset):
         for i in tqdm(range(len(self))):
             self[i]  # results are automatically cached
 
-        assert self.cache == len(self)  # ensure cache is filled
+        assert len(self.cache) == len(self)  # ensure cache is filled
 
         save_path = config.get_cached_tensors_path(
                         self.start_date, self.end_date
@@ -110,13 +115,13 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         df_idx = idx - self.labels_lens[labels_idx]
         out = self.features.extract_torch_tensors(
-                county_fips=self.labels[labels_idx][2].iloc[df_idx].name,
+                county_fips=self.labels_ilocs[df_idx],
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )
 
         out[config.labels_key] = \
-            self._classify_label(self.labels[labels_idx][2].iloc[df_idx]['new_cases'])
+            self._classify_label(self.labels[labels_idx][2].values[df_idx, 0])
 
         if idx not in self.cache:
             self.cache[idx] = out
