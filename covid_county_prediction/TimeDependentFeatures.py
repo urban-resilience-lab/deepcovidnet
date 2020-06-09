@@ -50,7 +50,7 @@ class TimeDependentFeatures(RawFeatures):
            os.path.exists(self.feature_saver.std_path)
 
         with open(self.feature_saver.mean_path, 'rb') as f:
-            mean = pickle.load()
+            mean = pickle.load(f)
         with open(self.feature_saver.std_path, 'rb') as f:
             std  = pickle.load(f)
 

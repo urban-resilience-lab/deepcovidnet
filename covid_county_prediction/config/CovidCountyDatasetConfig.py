@@ -10,7 +10,7 @@ config.labels_class_boundaries = [-100, -10, 0, 10, 100]
 config.num_classes = len(config.labels_class_boundaries) + 1
 
 config.get_cached_tensors_path = \
-    lambda s, e: os.path.join(global_config.data_save_dir, f'tensors_{str(s)}_{str(e)}')
+    lambda s, e: os.path.join(global_config.data_save_dir, f'tensors_{str(s)}_{str(e)}.pt')
 
 config.num_features = 5
 
