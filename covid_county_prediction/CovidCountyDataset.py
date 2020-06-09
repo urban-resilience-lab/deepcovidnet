@@ -5,9 +5,9 @@ from covid_county_prediction.FeaturesList import FeaturesList
 import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import bisect
-import pickle
 import os
 from tqdm import tqdm
+import torch
 
 
 class CovidCountyDataset(DataLoader, Dataset):
@@ -67,7 +67,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                             )
 
         if os.path.exists(saved_cache_path):
-            self.cache = pickle.load(saved_cache_path)
+            self.cache = torch.load(saved_cache_path)
 
         assert len(self.features) == config.num_features
 
@@ -87,7 +87,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                         self.start_date, self.end_date
                     )
         with open(save_path, 'wb') as f:
-            pickle.dump(self.cache, f)
+            torch.save(self.cache, f)
 
     def __getitem__(self, idx):
         if idx in self.cache:
