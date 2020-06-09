@@ -4,6 +4,7 @@ import torch
 import pickle
 import pandas as pd
 import os
+import covid_county_prediction.config.features_config as features_config
 
 
 class TimeDependentFeatures(RawFeatures):
@@ -39,7 +40,9 @@ class TimeDependentFeatures(RawFeatures):
         for i in range(start_idx, end_idx):
             if county_fips in self.raw_features[i].index:
                 np_tensor = \
-                    self.raw_features[i].loc[county_fips].fillna(0).to_numpy()
+                    self.raw_features[i].values[
+                        features_config.county_to_iloc[county_fips]
+                    ]
 
                 tensor[i - start_idx] = torch.tensor(np_tensor)
 
@@ -54,6 +57,6 @@ class TimeDependentFeatures(RawFeatures):
             std = concatenated.std()
 
         for i in range(len(self.raw_features)):
-            self.raw_features[i] = (self.raw_features[i] - mean) / std
+            self.raw_features[i] = ((self.raw_features[i] - mean) / std).fillna(0)
 
         return mean, std

@@ -1,6 +1,7 @@
 from covid_county_prediction.RawFeatures import RawFeatures
 import torch
 from datetime import date
+import covid_county_prediction.config.features_config as features_config
 
 
 class ConstantFeatures(RawFeatures):
@@ -11,7 +12,11 @@ class ConstantFeatures(RawFeatures):
     def extract_torch_tensor(self, county_fips: str, start_date: date,
                              end_date: date):
         if county_fips in self.raw_features.index:
-            return torch.tensor(self.raw_features.loc[county_fips].to_numpy())
+            return torch.tensor(
+                        self.raw_features.values[
+                            features_config.county_to_iloc[county_fips]
+                        ]
+                   )
 
         return torch.zeros(self.raw_features.shape[1])
 

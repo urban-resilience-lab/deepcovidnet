@@ -81,10 +81,6 @@ class CovidCountyDataset(DataLoader, Dataset):
         if os.path.exists(saved_cache_path):
             self.cache = torch.load(saved_cache_path)
 
-        self.labels_ilocs = []
-        for i in range(features_config.county_info.shape[0]):
-            self.labels_ilocs.append(features_config.county_info.iloc[i].name)
-
         assert len(self.features) == config.num_features
 
     def __len__(self):
@@ -115,7 +111,7 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         df_idx = idx - self.labels_lens[labels_idx]
         out = self.features.extract_torch_tensors(
-                county_fips=self.labels_ilocs[df_idx],
+                county_fips=features_config.iloc_to_county[df_idx],
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )

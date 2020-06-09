@@ -2,6 +2,7 @@ from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 from datetime import date, timedelta
 import covid_county_prediction.config.CountyWiseTimeDependentFeaturesConfig as\
     config
+import covid_county_prediction.config.features_config as features_config
 import numpy as np
 import torch
 import logging
@@ -42,8 +43,6 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
 
         assert len(common_dates), 'Features not combinable due to no common dates'
 
-        logging.info(f'Found {len(common_dates)} time steps for combined countywise features')
-
         # init tensor of shape (num_time_steps, num_counties, num_features)
         tensor = torch.zeros(
             len(common_dates),
@@ -60,7 +59,8 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                 cur_type = self.combined_features[feature_index].type
 
                 if cur_type == config.cross_type:
-                    features = df.loc[county_fips].to_numpy()
+                    features = \
+                        df.values[features_config.county_to_iloc[county_fips]]
                 elif cur_type == config.const_type:
                     features = np.squeeze(df.to_numpy(), axis=1)
 
