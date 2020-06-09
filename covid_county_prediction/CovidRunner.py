@@ -91,6 +91,12 @@ class CovidRunner(BaseRunner):
         # update weights
         self.optimizers[0].step()
 
+        # visualizations
+        self.output_gradient_distributions()
+        self.output_gradient_norms()
+        self.output_weight_distribution()
+        self.output_weight_norms()
+
         return metrics
 
     def get_optimizer(self, params):
@@ -110,7 +116,7 @@ class CovidRunner(BaseRunner):
         labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 
-        return self.get_metrics(pred, labels)
+        return self.get_metrics(pred, labels, get_loss=False)
 
     def _get_accuracy(self, pred, labels):
         # assert False, 'Needs Testing'
