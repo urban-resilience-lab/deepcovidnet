@@ -14,7 +14,7 @@ config.set_static_val('data_base_dir', data_base_dir)
 config.set_static_val('data_save_dir', data_save_dir)
 
 config.test_split_pct = 0.2
-config.train_split_pct = 0.8 * (1 - config.test_split_pct)
+config.train_split_pct = 0.85 * (1 - config.test_split_pct)
 config.val_split_pct = \
     1 - config.test_split_pct - config.train_split_pct
 
