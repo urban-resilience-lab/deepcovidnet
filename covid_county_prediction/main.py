@@ -7,7 +7,7 @@ import argparse
 from torch.utils.data import DataLoader, random_split
 import logging
 import torch
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 
 logging.getLogger().setLevel(logging.DEBUG)
@@ -71,17 +71,19 @@ def get_train_val_test_loaders(start_date, end_date):
 def main():
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('--mode', default='train', choices=['train', 'test', 'cache'])
+    parser.add_argument('--mode', default='train', choices=['train', 'test', 'cache', 'save'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
-
+    parser.add_argument('--start-date', default=str(global_config.data_start_date))
+    parser.add_argument('--end-date', default=str(global_config.data_end_date))
+    parser.add_argument('--save-func', default='save_weather_data')
     args = parser.parse_args()
 
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
     global_config.set_static_val('data_save_dir', args.data_save_dir, overwrite=True)
 
-    start_date  = global_config.data_start_date
-    end_date    = global_config.data_end_date
+    start_date  = datetime.strptime(args.start_date, '%Y-%m-%d').date()
+    end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
 
     if args.mode == 'train':
         train_loader, val_loader, test_loader = get_train_val_test_loaders(
@@ -108,6 +110,9 @@ def main():
         val_dataset.save_cache_on_disk()
         test_dataset.save_cache_on_disk()
 
+    elif args.mode == 'save':
+        d = DataSaver()
+        getattr(d, args.save_func)(start_date, end_date)
 
 if __name__ == '__main__':
     main()
