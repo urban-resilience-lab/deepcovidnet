@@ -25,6 +25,9 @@ class FeaturesList():
     def __len__(self):
         return len(self.features)
 
+    def __getitem__(self, idx):
+        return self.features[idx]
+
     def extract_torch_tensors(self, county_fips: str, start_date: date, end_date: date):
         tensors = {}
         for i in range(len(self.features)):

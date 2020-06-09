@@ -45,25 +45,15 @@ class TimeDependentFeatures(RawFeatures):
 
         return tensor
 
-    def normalize(self):
-        assert os.path.exists(self.feature_saver.mean_path) and \
-           os.path.exists(self.feature_saver.std_path)
-
-        with open(self.feature_saver.mean_path, 'rb') as f:
-            mean = pickle.load()
-        with open(self.feature_saver.std_path, 'rb') as f:
-            std  = pickle.load(f)
+    def normalize(self, mean=None, std=None):
+        if (mean is None) or (std is None):
+            concatenated = pd.concat(self.raw_features)
+        if mean is None:
+            mean = concatenated.mean()
+        if std is None:
+            std = concatenated.std()
 
         for i in range(len(self.raw_features)):
             self.raw_features[i] = (self.raw_features[i] - mean) / std
 
-    def save_pickled_mean_std(self):
-        concatenated = pd.concat(self.raw_features)
-        mean = concatenated.mean()
-        std  = concatenated.std()
-
-        with open(self.feature_saver.mean_path, 'wb') as f:
-            pickle.dump(mean, f)
-
-        with open(self.feature_saver.std_path, 'wb') as f:
-            pickle.dump(std, f)
+        return mean, std
