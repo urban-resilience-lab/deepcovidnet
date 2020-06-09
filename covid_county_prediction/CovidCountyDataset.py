@@ -11,7 +11,7 @@ import torch
 
 
 class CovidCountyDataset(DataLoader, Dataset):
-    def __init__(self, data_start_date, data_end_date):
+    def __init__(self, data_start_date, data_end_date, means_stds):
         super(CovidCountyDataset, self).__init__()
 
         training_data_end_date   = data_end_date
@@ -55,8 +55,19 @@ class CovidCountyDataset(DataLoader, Dataset):
             self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
         ]
 
+        if means_stds is None:
+            means_stds = [(None, None)] * len(features)
+
+        assert len(means_stds) == len(features)
+
+        self.means_stds = []
+
         for i in range(len(features)):
-            features[i].normalize()
+            self.means_stds.append(
+                features[i].normalize(
+                    mean=means_stds[i][0], std=means_stds[i][1]
+                )
+            )
 
         self.features = FeaturesList(features)
 
