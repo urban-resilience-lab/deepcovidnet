@@ -19,9 +19,7 @@ def get_cached_tensors_path(s, e):
     loc = os.path.join(tensor_dir, base_file)
     mem_loc = os.path.join('/dev/shm/', base_file)
     if os.path.exists(mem_loc):
-        print(mem_loc)
         return mem_loc
-    print(loc)
     return loc
 
 config.get_cached_tensors_path = get_cached_tensors_path

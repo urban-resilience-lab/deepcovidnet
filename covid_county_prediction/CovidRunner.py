@@ -4,6 +4,7 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
+from time import time
 
 
 def _check_no_nan_input(f):
@@ -103,12 +104,6 @@ class CovidRunner(BaseRunner):
 
         # update weights
         self.optimizers[0].step()
-
-        # visualizations
-        self.output_gradient_distributions()
-        self.output_gradient_norms()
-        self.output_weight_distribution()
-        self.output_weight_norms()
 
         return metrics
 
