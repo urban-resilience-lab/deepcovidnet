@@ -48,9 +48,9 @@ class ProgressMeter(object):
 def timed_logger_decorator(f):
     def wrapper(*args, **kwargs):
         logging.info(f'Entering {f.__name__}')
-        t = time.time()
+        t = time()
         ans = f(*args, **kwargs)
-        t = time.time() - t
+        t = time() - t
         logging.info(f'Exiting {f.__name__} after {t} secs')
         return ans
 
