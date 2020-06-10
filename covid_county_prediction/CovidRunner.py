@@ -40,7 +40,6 @@ class CovidRunner(BaseRunner):
             load_paths=[load_path]
         )
 
-    @timed_logger_decorator
     def get_metrics(self, pred, labels, get_loss=True):
         loss = self.loss_fn(pred, labels)
         acc  = self._get_accuracy(pred, labels)
@@ -59,8 +58,8 @@ class CovidRunner(BaseRunner):
         gt_max  = float_labels.max().item()
         gt_min  = float_labels.min().item()
 
-        soi_mean = self.nets[0].deep_fm.second_order_interactions.std().mean().item()
-        soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item().item()
+        soi_mean = self.nets[0].deep_fm.second_order_interactions.mean().item()
+        soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item()
 
         metrics = [
             ('loss', loss.mean().item()),
@@ -82,7 +81,6 @@ class CovidRunner(BaseRunner):
         else:
             return metrics
 
-    @timed_logger_decorator
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
         for k in batch_dict:
@@ -124,7 +122,6 @@ class CovidRunner(BaseRunner):
                 weight_decay=hyperparams.weight_decay
             )
 
-    @timed_logger_decorator
     def test_batch_and_get_metrics(self, batch_dict):
         for k in batch_dict:
             if torch.cuda.is_available():
