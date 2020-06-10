@@ -13,57 +13,75 @@ from datetime import timedelta, datetime
 logging.getLogger().setLevel(logging.DEBUG)
 
 
-def get_train_val_test_datasets(start_date, end_date):
+def get_train_val_test_datasets(start_date, end_date, mode):
+    assert mode in ['all', 'train', 'test']
+
     total_days = (end_date - start_date).days
 
     train_days = int(total_days * global_config.train_split_pct)
     test_days  = int(total_days * global_config.test_split_pct)
     val_days   = total_days - train_days - test_days
 
-    train_dataset = CovidCountyDataset(
-        start_date,
-        start_date + timedelta(train_days),
-        means_stds=None
-    )
+    train_start = start_date
+    val_start   = train_start + timedelta(train_days)
+    test_start  = val_start + timedelta(val_days)
 
-    val_dataset = CovidCountyDataset(
-        train_dataset.end_date,
-        train_dataset.end_date + timedelta(val_days),
-        means_stds=train_dataset.means_stds
-    )
+    train_dataset = None
+    val_dataset   = None
+    test_dataset  = None
 
-    test_dataset = CovidCountyDataset(
-        val_dataset.end_date,
-        val_dataset.end_date + timedelta(test_days),
-        means_stds=train_dataset.means_stds
-    )
+    if mode in ['all', 'train']:
+        train_dataset = CovidCountyDataset(
+            train_start,
+            val_start,
+            means_stds=None
+        )
 
-    assert test_dataset.end_date == end_date
+        val_dataset = CovidCountyDataset(
+            val_start,
+            test_start,
+            means_stds=train_dataset.means_stds
+        )
+
+    if mode in ['all', 'test']:
+        test_dataset = CovidCountyDataset(
+            test_start,
+            end_date,
+            means_stds=train_dataset.means_stds
+        )
 
     return train_dataset, val_dataset, test_dataset
 
 
-def get_train_val_test_loaders(start_date, end_date):
+def get_train_val_test_loaders(start_date, end_date, mode):
+    assert mode in ['all', 'train', 'test']
+
     train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(
-                                                start_date, end_date
+                                                start_date, end_date, mode
                                                )
-    train_loader = DataLoader(
-                        train_dataset,
+    train_loader = None
+    val_loader = None
+    test_loader = None
+
+    if mode in ['all', 'train']:
+        train_loader = DataLoader(
+                            train_dataset,
+                            batch_size=hyperparams.batch_size,
+                            shuffle=True
+                        )
+
+        val_loader = DataLoader(
+                        val_dataset,
                         batch_size=hyperparams.batch_size,
-                        shuffle=True
+                        shuffle=False
                     )
 
-    val_loader = DataLoader(
-                    val_dataset,
-                    batch_size=hyperparams.batch_size,
-                    shuffle=False
-                )
-
-    test_loader = DataLoader(
-                    test_dataset,
-                    batch_size=hyperparams.batch_size,
-                    shuffle=False
-                )
+    if mode in ['all', 'test']:
+        test_loader = DataLoader(
+                        test_dataset,
+                        batch_size=hyperparams.batch_size,
+                        shuffle=False
+                    )
 
     return train_loader, val_loader, test_loader
 
@@ -86,17 +104,16 @@ def main():
     end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
 
     if args.mode == 'train':
-        train_loader, val_loader, test_loader = get_train_val_test_loaders(
-                                                    start_date, end_date
-                                                )
+        train_loader, val_loader, _ = get_train_val_test_loaders(
+                                        start_date, end_date, args.mode
+                                      )
 
         runner = CovidRunner()
 
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
-        runner.test(test_loader)
 
     elif args.mode == 'test':
-        test_loader = get_train_val_test_loaders()[2]
+        test_loader = get_train_val_test_loaders(start_date, end_date, args.mode)[2]
 
         runner = CovidRunner()
 
