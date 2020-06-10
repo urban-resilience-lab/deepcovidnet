@@ -2,7 +2,6 @@ import torch.nn as nn
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import torch
-from covid_county_prediction.utils import timed_logger_decorator
 
 
 class DeepFM(nn.Module):
@@ -35,7 +34,6 @@ class DeepFM(nn.Module):
 
         self.second_order_interactions = None
 
-    @timed_logger_decorator
     def forward(self, features_dict):
         '''
         Args:
