@@ -31,6 +31,8 @@ class DeepFM(nn.Module):
             )
         )
 
+        self.second_order_interactions = None
+
     def forward(self, features_dict):
         '''
         Args:
@@ -41,7 +43,7 @@ class DeepFM(nn.Module):
         sorted_keys = sorted(features_dict)
 
         # FM Part
-        second_order_interactions = torch.empty(
+        self.second_order_interactions = torch.empty(
                                         features_dict[list(features_dict.keys())[0]].shape[0],
                                         int(self.num_features * (self.num_features - 1) / 2),
                                         requires_grad=False
@@ -50,7 +52,7 @@ class DeepFM(nn.Module):
         idx = 0
         for i in range(len(sorted_keys)):
             for j in range(i + 1, len(sorted_keys)):
-                second_order_interactions[:, idx] = \
+                self.second_order_interactions[:, idx] = \
                     torch.bmm(
                         features_dict[sorted_keys[i]].unsqueeze(1),
                         features_dict[sorted_keys[j]].unsqueeze(2)
@@ -58,12 +60,12 @@ class DeepFM(nn.Module):
                 idx += 1
 
         if torch.cuda.is_available():
-            second_order_interactions = second_order_interactions.cuda()
+            self.second_order_interactions = self.second_order_interactions.cuda()
 
         # Deep Part
         concatenated_features = [features_dict[sorted_keys[i]] for i in range(len(sorted_keys))]
         concatenated_features = torch.cat(concatenated_features, dim=1)
         higher_order_interactions = self.deep_processor(concatenated_features)
 
-        interactions = torch.cat([higher_order_interactions, second_order_interactions], dim=1)
+        interactions = torch.cat([higher_order_interactions, self.second_order_interactions], dim=1)
         return self.classifier(interactions)

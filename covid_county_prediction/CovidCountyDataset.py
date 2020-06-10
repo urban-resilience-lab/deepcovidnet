@@ -12,7 +12,8 @@ import torch
 
 
 class CovidCountyDataset(DataLoader, Dataset):
-    def __init__(self, data_start_date, data_end_date, means_stds):
+    def __init__(self, data_start_date, data_end_date, means_stds,
+                 override_cache=False):
         super(CovidCountyDataset, self).__init__()
 
         training_data_end_date   = data_end_date
@@ -22,6 +23,18 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         self.start_date = data_start_date
         self.end_date   = data_end_date
+        self.is_cached  = False
+
+        self.cache = {}
+
+        saved_cache_path = config.get_cached_tensors_path(
+                                self.start_date, self.end_date
+                            )
+
+        if (not override_cache) and os.path.exists(saved_cache_path):
+            self.cache = torch.load(saved_cache_path)
+            self.is_cached = True
+            return
 
         self.labels_lens = []
 
@@ -72,18 +85,11 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         self.features = FeaturesList(features)
 
-        self.cache = {}
-
-        saved_cache_path = config.get_cached_tensors_path(
-                                self.start_date, self.end_date
-                            )
-
-        if os.path.exists(saved_cache_path):
-            self.cache = torch.load(saved_cache_path)
-
         assert len(self.features) == config.num_features
 
     def __len__(self):
+        if self.is_cached:
+            return len(self.cache)
         return self.labels_lens[-1]
 
     def _classify_label(self, label):

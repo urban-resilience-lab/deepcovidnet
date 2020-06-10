@@ -1,6 +1,6 @@
-import torch, os, matplotlib
-import numpy as np
-from collections import defaultdict
+import logging
+from time import time
+
 
 class AverageMeter(object):
     """Computes and stores the average and current value"""
@@ -26,6 +26,7 @@ class AverageMeter(object):
         fmtstr = '{name} {val' + self.fmt + '} ({avg' + self.fmt + '})'
         return fmtstr.format(**self.__dict__)
 
+
 class ProgressMeter(object):
     #taken from https://github.com/pytorch/examples/blob/master/imagenet/main.py
     def __init__(self, num_batches, meters, prefix=""):
@@ -42,3 +43,15 @@ class ProgressMeter(object):
         num_digits = len(str(num_batches // 1))
         fmt = '{:' + str(num_digits) + 'd}'
         return '[' + fmt + '/' + fmt.format(num_batches) + ']'
+
+
+def timed_logger_decorator(f):
+    def wrapper(*args, **kwargs):
+        logging.info(f'Entering {f.__name__}')
+        t = time.time()
+        ans = f(*args, **kwargs)
+        t = time.time() - t
+        logging.info(f'Exiting {f.__name__} after {t} secs')
+        return ans
+
+    return wrapper

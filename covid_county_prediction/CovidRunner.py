@@ -4,6 +4,7 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
+from covid_county_prediction.utils import timed_logger_decorator
 
 
 def _check_no_nan_input(f):
@@ -39,6 +40,7 @@ class CovidRunner(BaseRunner):
             load_paths=[load_path]
         )
 
+    @timed_logger_decorator
     def get_metrics(self, pred, labels, get_loss=True):
         loss = self.loss_fn(pred, labels)
         acc  = self._get_accuracy(pred, labels)
@@ -47,17 +49,32 @@ class CovidRunner(BaseRunner):
 
         class_preds_mean = class_preds.float().mean().item()
         class_preds_std  = class_preds.float().std().item()
+        class_preds_max  = class_preds.max().item()
+        class_preds_min  = class_preds.min().item()
 
-        gt_mean = labels.float().mean().item()
-        gt_std  = labels.float().std().item()
+        float_labels = labels.float()
+
+        gt_mean = float_labels.mean().item()
+        gt_std  = float_labels.std().item()
+        gt_max  = float_labels.max().item()
+        gt_min  = float_labels.min().item()
+
+        soi_mean = self.nets[0].deep_fm.second_order_interactions.std().mean().item()
+        soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item().item()
 
         metrics = [
             ('loss', loss.mean().item()),
             ('acc', acc),
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
+            ('class_preds_max', class_preds_max),
+            ('class_preds_min', class_preds_min),
             ('gt_mean', gt_mean),
-            ('gt_std', gt_std)
+            ('gt_std', gt_std),
+            ('gt_max', gt_max),
+            ('gt_min', gt_min),
+            ('soi_mean', soi_mean),
+            ('soi_std', soi_std)
         ]
 
         if get_loss:
@@ -65,7 +82,7 @@ class CovidRunner(BaseRunner):
         else:
             return metrics
 
-    @_check_no_nan_input
+    @timed_logger_decorator
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
         for k in batch_dict:
@@ -107,7 +124,7 @@ class CovidRunner(BaseRunner):
                 weight_decay=hyperparams.weight_decay
             )
 
-    @_check_no_nan_input
+    @timed_logger_decorator
     def test_batch_and_get_metrics(self, batch_dict):
         for k in batch_dict:
             if torch.cuda.is_available():
