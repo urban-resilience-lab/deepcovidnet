@@ -2,11 +2,7 @@ import torch.nn as nn
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
-from covid_county_prediction.ConstantFeatures import ConstantFeatures
-from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
-from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
-
-# TODO: Parameters must be initialized at init time
+from covid_county_prediction.utils import timed_logger_decorator
 
 
 class EmbeddingModule(nn.Module):
@@ -15,6 +11,7 @@ class EmbeddingModule(nn.Module):
         self.are_layers_set = False
         self.embedding_modules = nn.ModuleDict()
 
+    @timed_logger_decorator
     def forward(self, features_dict):
         assert dataset_config.labels_key not in features_dict
 

@@ -2,11 +2,13 @@ import torch.nn as nn
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import torch
+from covid_county_prediction.utils import timed_logger_decorator
 
 
 class DeepFM(nn.Module):
-    def __init__(self, num_classes = dataset_config.num_classes, 
-            feature_dim=hyperparams.embedding_size, num_features=dataset_config.num_features):
+    def __init__(self, num_classes=dataset_config.num_classes,
+                 feature_dim=hyperparams.embedding_size,
+                 num_features=dataset_config.num_features):
         super(DeepFM, self).__init__()
 
         assert num_features > 1
@@ -33,10 +35,11 @@ class DeepFM(nn.Module):
 
         self.second_order_interactions = None
 
+    @timed_logger_decorator
     def forward(self, features_dict):
         '''
         Args:
-            feature_list: dict of PyTorch tensors of shape (batch_size, self.feature_dim) 
+            feature_list: dict of PyTorch tensors of shape (batch_size, self.feature_dim)
         '''
         assert dataset_config.labels_key not in features_dict
 

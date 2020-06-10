@@ -4,7 +4,6 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
-from covid_county_prediction.utils import timed_logger_decorator
 
 
 def _check_no_nan_input(f):
