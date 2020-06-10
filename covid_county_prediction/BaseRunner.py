@@ -18,7 +18,7 @@ class BaseRunner(metaclass=ABCMeta):
     # inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
     def __init__(self, models, loss_fn, optimizers, best_metric_name,
-        should_minimize_best_metric, debug = True, introspect = True, load_paths=None, model_code = ''):
+        should_minimize_best_metric, debug=True, load_paths=None, model_code = ''):
 
         assert type(models) == type([]), 'models must be a list'
         assert type(optimizers) == type([]), 'optimizers must be a list'
@@ -27,7 +27,6 @@ class BaseRunner(metaclass=ABCMeta):
         self.nets   = models
         self.name   = self.__class__.__name__
         self.debug  = debug
-        self.introspect = introspect
         self.best_metric_name = best_metric_name
         self.best_compare = -1 if should_minimize_best_metric else 1
         self.best_metric_val = - self.best_compare * 100000
@@ -65,9 +64,6 @@ class BaseRunner(metaclass=ABCMeta):
             warnings.warn('Could not load ' + d['arch'] + '! This happens when the architecture of the saved model is different than the current model')
 
     def output_weight_distribution(self, name_prefix="training_weights"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param_val in net.named_parameters():
                 if param_val.grad is not None:
@@ -75,9 +71,6 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_histogram(param_distribution_tag, param_val, global_step=self.global_step)
 
     def output_gradient_distributions(self, name_prefix="training_gradients"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 if param.grad is not None:
@@ -85,9 +78,6 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_histogram(param_distribution_tag, param.grad, global_step=self.global_step)
 
     def output_gradient_norms(self, name_prefix="training_gradient_norms"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 if param.grad is not None:
@@ -95,9 +85,6 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_scalar(param_distribution_tag, torch.norm(param.grad), global_step=self.global_step)
 
     def output_weight_norms(self, name_prefix="training_weight_norms"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 param_distribution_tag = f'{net.__class__.__name__}/{name_prefix}/{param_name}'
