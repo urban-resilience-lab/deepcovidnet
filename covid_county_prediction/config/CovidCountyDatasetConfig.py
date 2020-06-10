@@ -13,8 +13,18 @@ tensor_dir = os.path.join(global_config.data_save_dir, 'tensors/')
 if not os.path.exists(tensor_dir):
     os.mkdir(tensor_dir)
 
-config.get_cached_tensors_path = \
-    lambda s, e: os.path.join(tensor_dir, f'tensors_{str(s)}_{str(e)}.pt')
+
+def get_cached_tensors_path(s, e):
+    base_file = f'tensors_{str(s)}_{str(e)}.pt'
+    loc = os.path.join(tensor_dir, base_file)
+    mem_loc = os.path.join('/dev/shm/', base_file)
+    if os.path.exists(mem_loc):
+        print(mem_loc)
+        return mem_loc
+    print(loc)
+    return loc
+
+config.get_cached_tensors_path = get_cached_tensors_path
 
 config.num_features = 5
 
