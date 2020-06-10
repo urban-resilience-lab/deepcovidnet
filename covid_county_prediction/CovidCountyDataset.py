@@ -14,7 +14,7 @@ from covid_county_prediction.utils import timed_logger_decorator
 
 class CovidCountyDataset(DataLoader, Dataset):
     def __init__(self, data_start_date, data_end_date, means_stds,
-                 override_cache=False):
+                 use_cache=True):
         super(CovidCountyDataset, self).__init__()
 
         training_data_end_date   = data_end_date
@@ -24,8 +24,9 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         self.start_date = data_start_date
         self.end_date   = data_end_date
-        self.override_cache = override_cache
+        self.use_cache  = use_cache
         self.is_cached  = False
+        self.means_stds = means_stds
 
         self.cache = {}
 
@@ -96,9 +97,12 @@ class CovidCountyDataset(DataLoader, Dataset):
                                 self.start_date, self.end_date
                             )
 
-        if (not self.override_cache) and os.path.exists(saved_cache_path):
-            self.cache = torch.load(saved_cache_path)
-            self.is_cached = True
+        if self.use_cache:
+            if os.path.exists(saved_cache_path):
+                self.cache = torch.load(saved_cache_path)
+                self.is_cached = True
+            else:
+                raise Exception('use_cache is True but saved file is absent')
 
     def _classify_label(self, label):
         return bisect.bisect_left(config.labels_class_boundaries, label)
