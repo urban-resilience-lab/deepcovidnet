@@ -9,6 +9,7 @@ import bisect
 import os
 from tqdm import tqdm
 import torch
+from covid_county_prediction.utils import timed_logger_decorator
 
 
 class CovidCountyDataset(DataLoader, Dataset):
@@ -23,17 +24,14 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         self.start_date = data_start_date
         self.end_date   = data_end_date
+        self.override_cache = override_cache
         self.is_cached  = False
 
         self.cache = {}
 
-        saved_cache_path = config.get_cached_tensors_path(
-                                self.start_date, self.end_date
-                            )
+        self._load_cache_from_disk()
 
-        if (not override_cache) and os.path.exists(saved_cache_path):
-            self.cache = torch.load(saved_cache_path)
-            self.is_cached = True
+        if self.is_cached:
             return
 
         self.labels_lens = []
@@ -91,6 +89,16 @@ class CovidCountyDataset(DataLoader, Dataset):
         if self.is_cached:
             return len(self.cache)
         return self.labels_lens[-1]
+
+    @timed_logger_decorator
+    def _load_cache_from_disk(self):
+        saved_cache_path = config.get_cached_tensors_path(
+                                self.start_date, self.end_date
+                            )
+
+        if (not self.override_cache) and os.path.exists(saved_cache_path):
+            self.cache = torch.load(saved_cache_path)
+            self.is_cached = True
 
     def _classify_label(self, label):
         return bisect.bisect_left(config.labels_class_boundaries, label)
