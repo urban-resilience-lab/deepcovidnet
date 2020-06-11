@@ -52,15 +52,11 @@ class CovidRunner(BaseRunner):
 
         class_preds_mean = class_preds.float().mean().item()
         class_preds_std  = class_preds.float().std().item()
-        class_preds_max  = class_preds.max().item()
-        class_preds_min  = class_preds.min().item()
 
         float_labels = labels.float()
 
         gt_mean = float_labels.mean().item()
         gt_std  = float_labels.std().item()
-        gt_max  = float_labels.max().item()
-        gt_min  = float_labels.min().item()
 
         soi_mean = self.nets[0].deep_fm.second_order_interactions.mean().item()
         soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item()
@@ -70,12 +66,8 @@ class CovidRunner(BaseRunner):
             ('acc', acc),
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
-            ('class_preds_max', class_preds_max),
-            ('class_preds_min', class_preds_min),
             ('gt_mean', gt_mean),
             ('gt_std', gt_std),
-            ('gt_max', gt_max),
-            ('gt_min', gt_min),
             ('soi_mean', soi_mean),
             ('soi_std', soi_std)
         ]
@@ -94,6 +86,7 @@ class CovidRunner(BaseRunner):
             self.optimizers[0] = self.get_optimizer(
                 self.nets[0].parameters()
             )  # add parameters of embedding module too
+            global_config.comet_exp.set_model_graph(str(self.nets[0]))
             self.is_optimizer_set = True
 
         # calculate metrics

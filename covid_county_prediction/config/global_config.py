@@ -30,7 +30,8 @@ workspace = 'ankit61'
 config.set_static(
     'comet_exp',
     Experiment,
-    [comet_api_key, comet_project, workspace]
+    [comet_api_key, comet_project, workspace],
+    break_args=True
 )
 
 assert config.test_split_pct + config.train_split_pct + config.val_split_pct

@@ -1,7 +1,7 @@
+import covid_county_prediction.config.global_config as global_config
 from covid_county_prediction.CovidRunner import CovidRunner
 from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 from covid_county_prediction.DataSaver import DataSaver
-import covid_county_prediction.config.global_config as global_config
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import argparse
 from torch.utils.data import DataLoader, random_split
@@ -84,7 +84,7 @@ def get_train_val_test_loaders(start_date, end_date, mode):
 
 
 def main():
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(logging.WARNING)
 
     parser = argparse.ArgumentParser()
 
