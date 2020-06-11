@@ -117,9 +117,7 @@ class BaseRunner(metaclass=ABCMeta):
 
             metrics = metrics_calc(batch)
             global_config.comet_exp.log_metrics(
-                {metrics[j][0]: metrics[j][1] for j in range(len(metrics))},
-                step=i,
-                epoch=epoch
+                {(prefix + '_' + metrics[j][0]): metrics[j][1] for j in range(len(metrics))}
             )
 
             # loss.backward is called in metrics_calc
