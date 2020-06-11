@@ -1,3 +1,6 @@
+from collections.abc import Iterable
+
+
 class Config():
 
     static_members = {}
@@ -15,7 +18,11 @@ class Config():
         if name in Config.static_members and not overwrite:
             return
 
-        Config.static_members[name] = func(args)
+        if isinstance(args, Iterable):
+            Config.static_members[name] = func(*args)
+        else:
+            Config.static_members[name] = func(*args)
+
         self.__dict__[name] = Config.static_members[name]
 
     def set_static_val(self, name, val, overwrite=False):

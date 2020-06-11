@@ -4,7 +4,7 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
-from time import time
+import covid_county_prediction.config.global_config as global_config
 
 
 def _check_no_nan_input(f):
@@ -29,6 +29,11 @@ class CovidRunner(BaseRunner):
         optimizer = self.get_optimizer(
                         net.parameters()
                     )
+
+        global_config.comet_exp.log_parameter(
+            name='optim_name',
+            value=optimizer.__class__.__name__
+        )
 
         super(CovidRunner, self).__init__(
             models=[net],
@@ -82,10 +87,6 @@ class CovidRunner(BaseRunner):
 
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
-        for k in batch_dict:
-            if torch.cuda.is_available():
-                batch_dict[k] = batch_dict[k].cuda()
-
         labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 

@@ -10,9 +10,6 @@ import torch
 from datetime import timedelta, datetime
 
 
-logging.getLogger().setLevel(logging.DEBUG)
-
-
 def get_train_val_test_datasets(start_date, end_date, mode):
     assert mode in ['all', 'train', 'test']
 
@@ -87,6 +84,8 @@ def get_train_val_test_loaders(start_date, end_date, mode):
 
 
 def main():
+    logging.getLogger().setLevel(logging.DEBUG)
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--mode', default='train', choices=['train', 'test', 'cache', 'save'])
@@ -130,6 +129,7 @@ def main():
     elif args.mode == 'save':
         d = DataSaver()
         getattr(d, args.save_func)(start_date, end_date)
+
 
 if __name__ == '__main__':
     main()

@@ -3,6 +3,7 @@ import sys
 import os
 from pathlib import Path
 from datetime import date
+from comet_ml import Experiment
 
 
 config = Config('Global config parameters')
@@ -18,10 +19,19 @@ config.train_split_pct = 0.85 * (1 - config.test_split_pct)
 config.val_split_pct = \
     1 - config.test_split_pct - config.train_split_pct
 
-config.temp_rand_seed = 52465767532631
-
 config.data_start_date = date(2020, 1, 21)
 config.data_end_date = date(2020, 6, 1)
+
+# comet_ml
+comet_api_key = 'q0r1Pj8nOXNDahDBgYDUrnj0x'
+comet_project = 'covid-county-prediction'
+workspace = 'ankit61'
+
+config.set_static(
+    'comet_exp',
+    Experiment,
+    [comet_api_key, comet_project, workspace]
+)
 
 assert config.test_split_pct + config.train_split_pct + config.val_split_pct
 

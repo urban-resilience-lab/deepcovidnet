@@ -12,22 +12,24 @@ from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
 import warnings
 import logging
+import covid_county_prediction.config.global_config as global_config
 
 
 class BaseRunner(metaclass=ABCMeta):
     # inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
-    def __init__(self, models, loss_fn, optimizers, best_metric_name,
-        should_minimize_best_metric, debug = True, introspect = True, load_paths=None, model_code = ''):
-
-        assert type(models) == type([]), 'models must be a list'
-        assert type(optimizers) == type([]), 'optimizers must be a list'
+    def __init__(
+        self, models, loss_fn, optimizers, best_metric_name,
+        should_minimize_best_metric, debug=True, load_paths=None,
+        model_code=''
+    ):
+        assert isinstance(models, list), 'models must be a list'
+        assert isinstance(optimizers, list), 'optimizers must be a list'
 
         self.writer = tensorboardX.SummaryWriter(config.tensorboardx_base_dir)
         self.nets   = models
         self.name   = self.__class__.__name__
         self.debug  = debug
-        self.introspect = introspect
         self.best_metric_name = best_metric_name
         self.best_compare = -1 if should_minimize_best_metric else 1
         self.best_metric_val = - self.best_compare * 100000
@@ -35,7 +37,6 @@ class BaseRunner(metaclass=ABCMeta):
         self.loss_fn = loss_fn
         self.optimizers = optimizers
         self.model_code = model_code
-        self.keys_for_gpu = None
         self.lr_schedulers = \
             [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
@@ -65,9 +66,6 @@ class BaseRunner(metaclass=ABCMeta):
             warnings.warn('Could not load ' + d['arch'] + '! This happens when the architecture of the saved model is different than the current model')
 
     def output_weight_distribution(self, name_prefix="training_weights"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param_val in net.named_parameters():
                 if param_val.grad is not None:
@@ -75,9 +73,6 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_histogram(param_distribution_tag, param_val, global_step=self.global_step)
 
     def output_gradient_distributions(self, name_prefix="training_gradients"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 if param.grad is not None:
@@ -85,9 +80,6 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_histogram(param_distribution_tag, param.grad, global_step=self.global_step)
 
     def output_gradient_norms(self, name_prefix="training_gradient_norms"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 if param.grad is not None:
@@ -95,16 +87,10 @@ class BaseRunner(metaclass=ABCMeta):
                     self.writer.add_scalar(param_distribution_tag, torch.norm(param.grad), global_step=self.global_step)
 
     def output_weight_norms(self, name_prefix="training_weight_norms"):
-        if not self.introspect:
-            return
-
         for net in self.nets:
             for param_name, param in net.named_parameters():
                 param_distribution_tag = f'{net.__class__.__name__}/{name_prefix}/{param_name}'
                 self.writer.add_scalar(param_distribution_tag, torch.norm(param), global_step=self.global_step)
-
-    def set_gpu_keys(self, keys):
-        self.keys_for_gpu = keys
 
     def run(self, data_loader, prefix, epoch, metrics_calc):
         batch_time_meter = utils.AverageMeter('Time')
@@ -118,29 +104,32 @@ class BaseRunner(metaclass=ABCMeta):
             batch_number = epoch * len(data_loader) + i + 1
             data_time_meter.update(time.time() - start_time)
 
-            #if batch_number % constants.INTERMITTENT_OUTPUT_FREQ == 0:
-            #    self.intermittent_introspection(batch, batch_number)
-
-            #transfer from CPU -> GPU asynchronously if at all
+            # transfer from CPU -> GPU asynchronously if at all
             if torch.cuda.is_available():
-                if type(batch) != type([]) and type(batch) != type({}):
+                if (not isinstance(batch, list)) and (not isinstance(batch, dict)):
                     batch = batch.cuda(non_blocking=True)
-                elif type(batch) == type([]):
+                elif isinstance(batch, list):
                     for j in range(len(batch)):
                         batch[j] = batch[j].cuda(non_blocking=True)
-                else: #type(batch) == type({})
+                else:  # isinstance(batch, dict)
                     for key in batch.keys():
-                        if self.keys_for_gpu is None or key in self.keys_for_gpu:
-                            batch[key] = batch[key].cuda(non_blocking=True)
+                        batch[key] = batch[key].cuda(non_blocking=True)
 
             metrics = metrics_calc(batch)
+            global_config.comet_exp.log_metrics(
+                {metrics[j][0]: metrics[j][1] for j in range(len(metrics))},
+                step=i,
+                epoch=epoch
+            )
 
             # loss.backward is called in metrics_calc
             if metrics is not None:
                 for j, (metric_name, metric_val) in enumerate(metrics):
-                    if metric_val == metric_val: # if metric_val != nan/inf
-                        self.writer.add_scalar(os.path.join(self.name, prefix + '_' + 
-                            metric_name), metric_val, self.global_step)
+                    if metric_val == metric_val:  # if metric_val != nan/inf
+                        self.writer.add_scalar(
+                            os.path.join(self.name, prefix + '_' + metric_name),
+                            metric_val, self.global_step
+                        )
 
                     if not progress_display_made:
                         other_meters.append(utils.AverageMeter(metric_name))
@@ -163,7 +152,7 @@ class BaseRunner(metaclass=ABCMeta):
             if i % config.print_freq == 0:
                 progress.display(i, epoch)
 
-    def train(self, train_loader, epochs, val_loader = None, validate_on_train=False):
+    def train(self, train_loader, epochs, val_loader=None, validate_on_train=False):
         assert val_loader is None or not validate_on_train 
         self.output_weight_distribution("weight_initializations")
 
