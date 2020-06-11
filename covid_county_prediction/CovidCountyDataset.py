@@ -10,6 +10,7 @@ import os
 from tqdm import tqdm
 import torch
 from covid_county_prediction.utils import timed_logger_decorator
+from math import ceil, floor
 
 
 class CovidCountyDataset(DataLoader, Dataset):
@@ -42,6 +43,7 @@ class CovidCountyDataset(DataLoader, Dataset):
         self.labels = []
         while d < data_end_date:
             cur_labels = self.load_num_cases(d, d + timedelta(days=1)).raw_features[0]
+            cur_labels = cur_labels.fillna(0)
             self.labels.append(
                 (
                     d - timedelta(days=rfe_config.past_days_to_consider),
@@ -105,6 +107,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                 raise Exception('use_cache is True but saved file is absent')
 
     def _classify_label(self, label):
+        assert ceil(label) == floor(label) and label == label
         return bisect.bisect_left(config.labels_class_boundaries, label)
 
     def save_cache_on_disk(self):
