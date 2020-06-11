@@ -152,6 +152,9 @@ class BaseRunner(metaclass=ABCMeta):
             if i % config.print_freq == 0:
                 progress.display(i, epoch)
 
+        if i % config.print_freq != 0:
+            progress.display(i + 1, epoch)
+
     def train(self, train_loader, epochs, val_loader=None, validate_on_train=False):
         assert val_loader is None or not validate_on_train 
         self.output_weight_distribution("weight_initializations")
