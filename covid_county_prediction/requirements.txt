@@ -4,3 +4,4 @@ numpy
 pandas
 tensorboardX
 tqdm
+comet_ml
