@@ -13,6 +13,7 @@ import warnings
 import logging
 from torch.utils.tensorboard import SummaryWriter
 import signal
+import sys
 
 
 class BaseRunner(metaclass=ABCMeta):
@@ -20,7 +21,7 @@ class BaseRunner(metaclass=ABCMeta):
 
     def __init__(
         self, nets, loss_fn, optimizers, best_metric_name,
-        should_minimize_best_metric, exp_name, hyperparams,
+        should_minimize_best_metric, exp_name, hparams_dict,
         load_paths=None
     ):
         assert isinstance(nets, list), 'nets must be a list'
@@ -36,7 +37,8 @@ class BaseRunner(metaclass=ABCMeta):
         self.loss_fn = loss_fn
         self.optimizers = optimizers
         self.exp_name = exp_name
-        self.hyperparams = hyperparams
+        self.hparams_dict = hparams_dict
+        print(hparams_dict)
         self.lr_schedulers = \
             [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
@@ -221,12 +223,15 @@ class BaseRunner(metaclass=ABCMeta):
             else:
                 self.run(test_loader, 'test', 1, self.test_batch_and_get_metrics)
 
-    def train_end(self):
+    def train_end(self, *args, **kwargs):
         self.output_weight_distribution("final_weights")
-        self.wrtier.add_hparams(
-            hparam_dict=self.hyperparams,
+        self.writer.add_hparams(
+            hparam_dict=self.hparams_dict,
             metric_dict={self.best_metric_name: self.best_metric_val}
         )
+
+        if len(args):  # must have been called from sig handler
+            sys.exit(0)
 
     def validate_batch_and_get_metrics(self, batch):
         return self.get_metrics_and_track_best(batch, self.test_batch_and_get_metrics)

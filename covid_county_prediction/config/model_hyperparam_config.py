@@ -23,8 +23,10 @@ config.higher_order_features_size   = 512
 def get_hparams_dict():
     hyperparams = config.__dict__
     for k in Config.static_members:
-        hyperparams.pop(k)
+        if k in hyperparams:
+            hyperparams.pop(k)
     hyperparams.pop('description')
+    hyperparams.pop('get_hparams_dict')
     return hyperparams
 
 
