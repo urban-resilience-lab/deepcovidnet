@@ -88,6 +88,7 @@ def main():
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('--exp', required=True)
     parser.add_argument('--mode', default='train', choices=['train', 'test', 'cache', 'save'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
@@ -107,14 +108,14 @@ def main():
                                         start_date, end_date, args.mode
                                       )
 
-        runner = CovidRunner()
+        runner = CovidRunner(args.exp)
 
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
     elif args.mode == 'test':
         test_loader = get_train_val_test_loaders(start_date, end_date, args.mode)[2]
 
-        runner = CovidRunner()
+        runner = CovidRunner(args.exp)
 
         runner.test(test_loader)
 

@@ -4,7 +4,6 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
-import covid_county_prediction.config.global_config as global_config
 
 
 def _check_no_nan_input(f):
@@ -19,7 +18,7 @@ def _check_no_nan_input(f):
 
 
 class CovidRunner(BaseRunner):
-    def __init__(self, load_path=None):
+    def __init__(self, exp_name, load_path=None):
         net = CovidModule()
         self.is_optimizer_set = False
 
@@ -30,18 +29,18 @@ class CovidRunner(BaseRunner):
                         net.parameters()
                     )
 
-        global_config.comet_exp.log_parameter(
-            name='optim_name',
-            value=optimizer.__class__.__name__
-        )
+        hparams_dict = hyperparams.get_hparams_dict()
+        hparams_dict['optim_name'] = optimizer.__class__.__name__
 
         super(CovidRunner, self).__init__(
-            models=[net],
+            nets=[net],
             loss_fn=nn.CrossEntropyLoss(),
             optimizers=[optimizer],
             best_metric_name='loss',
             should_minimize_best_metric=True,
-            load_paths=[load_path]
+            exp_name=exp_name,
+            load_paths=[load_path],
+            hyperparams=hparams_dict
         )
 
     def get_metrics(self, pred, labels, get_loss=True):
@@ -86,7 +85,6 @@ class CovidRunner(BaseRunner):
             self.optimizers[0] = self.get_optimizer(
                 self.nets[0].parameters()
             )  # add parameters of embedding module too
-            global_config.comet_exp.set_model_graph(str(self.nets[0]))
             self.is_optimizer_set = True
 
         # calculate metrics

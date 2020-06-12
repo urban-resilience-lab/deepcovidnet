@@ -19,13 +19,15 @@ config.batch_size                   = 64
 config.embedding_size               = 512
 config.higher_order_features_size   = 512
 
-config.set_static_val('are_hyperparams_set', False)
-if not config.are_hyperparams_set:
+
+def get_hparams_dict():
     hyperparams = config.__dict__
     for k in Config.static_members:
         hyperparams.pop(k)
     hyperparams.pop('description')
+    return hyperparams
 
-    global_config.comet_exp.log_parameters(hyperparams)
+
+config.get_hparams_dict = get_hparams_dict
 
 sys.modules[__name__] = config

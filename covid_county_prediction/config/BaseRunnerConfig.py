@@ -11,13 +11,18 @@ config.intermittent_output_freq = 5 # Num batches between outputs
 config.save_freq                = 5
 
 
-config.tensorboardx_base_dir = os.path.join(
-    Path(os.path.dirname(os.path.abspath(__file__))).parent.parent, os.path.join('runs', datetime.now().strftime('%b%d_%H-%M-%S') + '_' + getpass.getuser()))
-config.models_base_dir = os.path.join(
-    Path(os.path.dirname(os.path.abspath(__file__))).parent.parent, 'models')
+file_dir = os.path.dirname(os.path.abspath(__file__))
+
+config.get_tensorboard_dir = \
+    lambda exp_name: os.path.join(
+                        Path(file_dir).parent.parent,
+                        'runs',
+                        datetime.now().strftime('%b%d_%H-%M') + '_' + exp_name
+                    )
+
+config.models_base_dir = os.path.join(Path(file_dir).parent.parent, 'models')
 
 if not os.path.exists(config.models_base_dir):
     os.mkdir(config.models_base_dir)
 
 sys.modules[__name__] = config
-
