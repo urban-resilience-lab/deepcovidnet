@@ -121,7 +121,7 @@ def main():
 
     elif args.mode == 'cache':
         train_dataset, val_dataset, test_dataset = \
-            get_train_val_test_datasets(start_date, end_date)
+            get_train_val_test_datasets(start_date, end_date, mode='all')
 
         train_dataset.save_cache_on_disk()
         val_dataset.save_cache_on_disk()
