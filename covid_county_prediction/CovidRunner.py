@@ -40,7 +40,7 @@ class CovidRunner(BaseRunner):
             should_minimize_best_metric=True,
             exp_name=exp_name,
             load_paths=[load_path],
-            hyperparams=hparams_dict
+            hparams_dict=hparams_dict
         )
 
     def get_metrics(self, pred, labels, get_loss=True):
