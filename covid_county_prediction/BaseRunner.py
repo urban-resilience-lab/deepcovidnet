@@ -2,7 +2,6 @@ import torch
 import torch.nn as nn
 from torch.optim import lr_scheduler
 from abc import abstractmethod, ABCMeta
-import tensorboardX
 import covid_county_prediction.utils as utils
 import time
 import covid_county_prediction.config.BaseRunnerConfig as config
@@ -12,31 +11,32 @@ from numpy import sign
 import torch.optim.lr_scheduler as lr_scheduler
 import warnings
 import logging
-import covid_county_prediction.config.global_config as global_config
+from torch.utils.tensorboard import SummaryWriter
+import signal
 
 
 class BaseRunner(metaclass=ABCMeta):
     # inspired by https://github.com/pytorch/examples/blob/master/imagenet/main.py
 
     def __init__(
-        self, models, loss_fn, optimizers, best_metric_name,
-        should_minimize_best_metric, debug=True, load_paths=None,
-        model_code=''
+        self, nets, loss_fn, optimizers, best_metric_name,
+        should_minimize_best_metric, exp_name, hyperparams,
+        load_paths=None
     ):
-        assert isinstance(models, list), 'models must be a list'
+        assert isinstance(nets, list), 'nets must be a list'
         assert isinstance(optimizers, list), 'optimizers must be a list'
 
-        self.writer = tensorboardX.SummaryWriter(config.tensorboardx_base_dir)
-        self.nets   = models
+        self.writer = SummaryWriter(config.get_tensorboard_dir(exp_name))
+        self.nets   = nets
         self.name   = self.__class__.__name__
-        self.debug  = debug
         self.best_metric_name = best_metric_name
         self.best_compare = -1 if should_minimize_best_metric else 1
         self.best_metric_val = - self.best_compare * 100000
         self.best_meter = utils.AverageMeter('best_metric')
         self.loss_fn = loss_fn
         self.optimizers = optimizers
-        self.model_code = model_code
+        self.exp_name = exp_name
+        self.hyperparams = hyperparams
         self.lr_schedulers = \
             [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
@@ -45,7 +45,7 @@ class BaseRunner(metaclass=ABCMeta):
         if load_paths is not None:
             for i in range(len(load_paths)):
                 if load_paths[i]:
-                    self.load_model(models[i], load_paths[i])
+                    self.load_model(self.nets[i], load_paths[i])
 
         if(torch.cuda.is_available()):
             for i in range(len(self.nets)):
@@ -116,9 +116,6 @@ class BaseRunner(metaclass=ABCMeta):
                         batch[key] = batch[key].cuda(non_blocking=True)
 
             metrics = metrics_calc(batch)
-            global_config.comet_exp.log_metrics(
-                {(prefix + '_' + metrics[j][0]): metrics[j][1] for j in range(len(metrics))}
-            )
 
             # loss.backward is called in metrics_calc
             if metrics is not None:
@@ -154,7 +151,15 @@ class BaseRunner(metaclass=ABCMeta):
             progress.display(i + 1, epoch)
 
     def train(self, train_loader, epochs, val_loader=None, validate_on_train=False):
-        assert val_loader is None or not validate_on_train 
+        assert val_loader is None or not validate_on_train
+
+        # add signal handlers
+        orig_sigint_handler = signal.getsignal(signal.SIGINT)
+        orig_sigterm_handler = signal.getsignal(signal.SIGTERM)
+
+        signal.signal(signal.SIGINT, self.train_end)
+        signal.signal(signal.SIGTERM, self.train_end)
+
         self.output_weight_distribution("weight_initializations")
 
         for i in range(len(self.nets)):
@@ -163,43 +168,48 @@ class BaseRunner(metaclass=ABCMeta):
         train_metrics_calc = self.train_batch_and_track_metrics if validate_on_train else self.train_batch_and_get_metrics
 
         for epoch in range(epochs):
+            self.best_meter.reset()
             self.run(train_loader, 'train', epoch, train_metrics_calc)
 
             if val_loader is not None:
+                self.best_meter.reset()
                 self.test(val_loader, validate=True)
 
             if val_loader is not None or validate_on_train:
                 if(sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
                     for i in range(len(self.nets)):
                         torch.save({
-                            'arch': self.nets[i].__class__.__name__ + self.model_code,
+                            'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
                             'state_dict': self.nets[i].state_dict(),
                             'best_metric_val': self.best_meter.avg,
                             'best_metric_name': self.best_metric_name
                             }, os.path.join(config.models_base_dir,
-                                self.nets[i].__class__.__name__ + self.model_code + '_' + \
+                                self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
                                 'checkpoint_' + str(epoch + 1) + '.pth')
                         )
                         self.best_metric_val = self.best_meter.avg
-                self.best_meter.reset()
             elif epoch % config.save_freq == 0:
-                    for i in range(len(self.nets)):
-                        torch.save({
-                            'arch': self.nets[i].__class__.__name__ + self.model_code,
-                            'state_dict': self.nets[i].state_dict(),
-                            'best_metric_val': self.best_meter.avg,
-                            'best_metric_name': self.best_metric_name
-                           }, os.path.join(config.models_base_dir,
-                                self.nets[i].__class__.__name__ + self.model_code + '_' + \
-                                'checkpoint_' + str(epoch + 1) + '.pth')
-                        )
+                for i in range(len(self.nets)):
+                    torch.save({
+                        'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
+                        'state_dict': self.nets[i].state_dict(),
+                        'best_metric_val': self.best_meter.avg,
+                        'best_metric_name': self.best_metric_name
+                        }, os.path.join(config.models_base_dir,
+                            self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
+                            'checkpoint_' + str(epoch + 1) + '.pth')
+                    )
 
-        for i in range(len(self.lr_schedulers)):
-            if(min(self.lr_schedulers[i].get_lr()) >=\
-               hyperparams.min_learning_rate):
-                self.lr_schedulers[i].step()
+            for i in range(len(self.lr_schedulers)):
+                if(
+                    min(self.lr_schedulers[i].get_lr()) >=
+                    hyperparams.min_learning_rate
+                ):
+                    self.lr_schedulers[i].step()
 
-        self.output_weight_distribution("final_weights")
+        self.train_end()
+        signal.signal(signal.SIGINT, orig_sigint_handler)
+        signal.signal(signal.SIGTERM, orig_sigterm_handler)
 
     def test(self, test_loader, validate=False):
         for i in range(len(self.nets)):
@@ -210,6 +220,13 @@ class BaseRunner(metaclass=ABCMeta):
                 self.run(test_loader, 'val', 1, self.validate_batch_and_get_metrics)
             else:
                 self.run(test_loader, 'test', 1, self.test_batch_and_get_metrics)
+
+    def train_end(self):
+        self.output_weight_distribution("final_weights")
+        self.wrtier.add_hparams(
+            hparam_dict=self.hyperparams,
+            metric_dict={self.best_metric_name: self.best_metric_val}
+        )
 
     def validate_batch_and_get_metrics(self, batch):
         return self.get_metrics_and_track_best(batch, self.test_batch_and_get_metrics)
