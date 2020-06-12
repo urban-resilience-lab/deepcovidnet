@@ -133,7 +133,7 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         df_idx = idx - self.labels_lens[labels_idx]
         out = self.features.extract_torch_tensors(
-                county_fips=features_config.iloc[df_idx],
+                county_fips=self.labels[labels_idx][2].iloc[df_idx].name,
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )
