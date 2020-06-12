@@ -43,7 +43,8 @@ class CovidCountyDataset(DataLoader, Dataset):
         self.labels = []
         while d < data_end_date:
             cur_labels = self.load_num_cases(d, d + timedelta(days=1)).raw_features[0]
-            cur_labels = cur_labels.fillna(0)
+            cur_labels = cur_labels.dropna()
+            cur_labels = cur_labels[cur_labels['new_cases'] >= 0].dropna()
             self.labels.append(
                 (
                     d - timedelta(days=rfe_config.past_days_to_consider),
@@ -132,7 +133,7 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         df_idx = idx - self.labels_lens[labels_idx]
         out = self.features.extract_torch_tensors(
-                county_fips=features_config.iloc_to_county[df_idx],
+                county_fips=features_config.iloc[df_idx],
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )
