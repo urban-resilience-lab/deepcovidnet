@@ -17,6 +17,18 @@ def _check_no_nan_input(f):
     return wrapper
 
 
+class OrdinalBCEWithLogitsLoss(nn.Module):
+    def __init__(self):
+        super(OrdinalBCEWithLogitsLoss, self).__init__()
+        self.bce_loss = nn.BCEWithLogitsLoss()
+
+    def forward(self, pred, labels):
+        return self.bce_loss(
+                pred.flatten().unsqueeze(1),
+                labels.flatten().unsqueeze(1),
+            )
+
+
 class CovidRunner(BaseRunner):
     def __init__(self, exp_name, load_path=None):
         net = CovidModule()
@@ -34,7 +46,7 @@ class CovidRunner(BaseRunner):
 
         super(CovidRunner, self).__init__(
             nets=[net],
-            loss_fn=nn.CrossEntropyLoss(),
+            loss_fn=OrdinalBCEWithLogitsLoss(),
             optimizers=[optimizer],
             best_metric_name='loss',
             should_minimize_best_metric=True,
@@ -76,9 +88,17 @@ class CovidRunner(BaseRunner):
         else:
             return metrics
 
+    def _make_ordinal_labels(self, labels):
+        ans = torch.zeros(labels.shape[0], dataset_config.num_classes)
+        for i, l in enumerate(labels):
+            ans[i][l:] = 1
+        return ans
+
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
-        labels = batch_dict.pop(dataset_config.labels_key)
+        labels = self._make_ordinal_labels(
+                        batch_dict.pop(dataset_config.labels_key)
+                    )
         pred = self.nets[0](batch_dict)
 
         if not self.is_optimizer_set:
