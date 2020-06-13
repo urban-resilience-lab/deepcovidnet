@@ -5,6 +5,7 @@ from covid_county_prediction.FeaturesList import FeaturesList
 import covid_county_prediction.config.RawFeatureExtractorConfig as rfe_config
 import covid_county_prediction.config.CovidCountyDatasetConfig as config
 import covid_county_prediction.config.features_config as features_config
+import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import bisect
 import os
 from tqdm import tqdm
@@ -17,11 +18,6 @@ class CovidCountyDataset(DataLoader, Dataset):
     def __init__(self, data_start_date, data_end_date, means_stds,
                  use_cache=True):
         super(CovidCountyDataset, self).__init__()
-
-        training_data_end_date   = data_end_date
-        training_data_start_date = \
-            data_start_date - \
-            timedelta(days=rfe_config.past_days_to_consider)
 
         self.start_date = data_start_date
         self.end_date   = data_end_date
@@ -39,16 +35,20 @@ class CovidCountyDataset(DataLoader, Dataset):
         self.labels_lens = []
 
         # load all labels
-        d = data_start_date
+        d = self.start_date
         self.labels = []
-        while d < data_end_date:
+        while d < self.end_date:
             cur_labels = self.load_num_cases(d, d + timedelta(days=1)).raw_features[0]
             cur_labels = cur_labels.dropna()
             cur_labels = cur_labels[cur_labels['new_cases'] >= 0].dropna()
+
+            cur_end = d - timedelta(hyperparams.projection_days)
+            cur_start = cur_end - timedelta(hyperparams.past_days_to_consider)
+
             self.labels.append(
                 (
-                    d - timedelta(days=rfe_config.past_days_to_consider),
-                    d,
+                    cur_start,
+                    cur_end,
                     cur_labels
                 )
             )
@@ -60,6 +60,13 @@ class CovidCountyDataset(DataLoader, Dataset):
             else:
                 self.labels_lens.append(cur_labels.shape[0])
             d += timedelta(days=1)
+
+        training_data_end_date = \
+            self.end_date - timedelta(hyperparams.projection_days)
+
+        training_data_start_date = \
+            self.start_date - timedelta(hyperparams.projection_days) -\
+            timedelta(hyperparams.past_days_to_consider)
 
         features = [
             self.load_census_data(),

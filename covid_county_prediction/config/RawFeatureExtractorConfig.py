@@ -117,9 +117,6 @@ config.poi_info_pickle_path = os.path.join(global_config.data_save_dir, 'poi_inf
 # labels
 config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-data/master/us-counties.csv'
 
-# past days
-config.past_days_to_consider = 20
-
 # weather
 config.weather_token = 'WfaiwuFYdVwalQeqsdKwhVBHVbfoLGHA'
 config.weather_attributes = ['TMIN', 'TMAX']

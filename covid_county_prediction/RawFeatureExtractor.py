@@ -8,6 +8,7 @@ import requests
 from datetime import date, timedelta
 import covid_county_prediction.config.features_config as features_config
 import covid_county_prediction.config.DataSaverConfig as saver_config
+import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import logging
 from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
@@ -294,36 +295,45 @@ class RawFeatureExtractor():
                                   start_date, timedelta(days=1),
                                   feature_saver=saver_config.sg_social_distancing)
 
-    def read_num_cases(self, start_date, end_date, are_labels=False):
+    def read_num_cases(self, start_date, end_date):
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'
         ], dtype={'fips': str}).dropna().set_index('fips')
 
         output_dfs = []
 
+        interval = timedelta(hyperparams.projection_days)
+
         cur_date = start_date
         while cur_date < end_date:
-            df_yesterday    = df[df['date'] == (cur_date - timedelta(days=1)).strftime('%Y-%m-%d')]
-            df_today        = df[df['date'] == cur_date.strftime('%Y-%m-%d')]
+            df_old = df[df['date'] == str(cur_date - interval)]
+            df_new = df[df['date'] == str(cur_date)]
 
-            cur_df = df_yesterday.merge(df_today, how='right', left_index=True, right_index=True, suffixes=('_start', '_end'))
-            cur_df['new_cases'] = cur_df['cases_end'].subtract(cur_df['cases_start'], fill_value=0)
-            cur_df.drop(['cases_end', 'cases_start', 'date_end', 'date_start'], axis=1, inplace=True)
+            cur_df = df_old.merge(
+                        df_new, how='right', left_index=True, right_index=True,
+                        suffixes=('_start', '_end')
+                    )
+            cur_df['new_cases'] = cur_df['cases_end'].subtract(
+                                    cur_df['cases_start'], fill_value=0
+                                )
+            cur_df.drop(
+                ['cases_end', 'cases_start', 'date_end', 'date_start'],
+                axis=1,
+                inplace=True
+            )
 
-            output_dfs.append(cur_df.fillna(0))
+            cur_df = cur_df[cur_df['new_cases'] >= 0]  # negatives are errors
+
+            output_dfs.append(cur_df)
 
             logging.info('Processed num cases for ' + str(cur_date))
 
             cur_date += timedelta(days=1)
 
-        if are_labels:
-            assert len(output_dfs) == 1
-            return output_dfs[0]
-        else:
-            return TimeDependentFeatures(
-                output_dfs, 'new_cases', start_date, timedelta(days=1),
-                feature_saver=saver_config.num_cases
-            )
+        return TimeDependentFeatures(
+            output_dfs, 'new_cases', start_date, timedelta(days=1),
+            feature_saver=saver_config.num_cases
+        )
 
     def read_countywise_cumulative_cases(self, start_date, end_date):
         df = pd.read_csv(config.labels_csv_path, usecols=[
@@ -343,7 +353,10 @@ class RawFeatureExtractor():
                 logging.info('Processed cumulative cases for ' + str(cur_date))
             else:
                 output_dfs.append(
-                    pd.DataFrame(0, index=df.index.drop_duplicates(), columns=['cases'])
+                    pd.DataFrame(
+                        0, index=df.index.drop_duplicates(),
+                        columns=['cases']
+                    )
                 )
             cur_date += timedelta(days=1)
 
