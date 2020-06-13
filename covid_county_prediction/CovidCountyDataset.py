@@ -137,7 +137,8 @@ class CovidCountyDataset(DataLoader, Dataset):
         if self.labels_lens[labels_idx] == idx:
             labels_idx += 1
 
-        df_idx = idx - self.labels_lens[labels_idx]
+        df_idx = idx - (labels_idx > 0) * self.labels_lens[labels_idx - 1]
+
         out = self.features.extract_torch_tensors(
                 county_fips=self.labels[labels_idx][2].iloc[df_idx].name,
                 start_date=self.labels[labels_idx][0],
