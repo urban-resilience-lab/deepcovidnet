@@ -91,7 +91,11 @@ class CovidRunner(BaseRunner):
     def _make_ordinal_labels(self, labels):
         ans = torch.zeros(labels.shape[0], dataset_config.num_classes)
         for i, l in enumerate(labels):
-            ans[i][l:] = 1
+            ans[i][:l] = 1
+
+        if torch.cuda.is_available():
+            ans = ans.cuda()
+
         return ans
 
     def train_batch_and_get_metrics(self, batch_dict):
