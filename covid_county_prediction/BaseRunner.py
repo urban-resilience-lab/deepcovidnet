@@ -38,7 +38,6 @@ class BaseRunner(metaclass=ABCMeta):
         self.optimizers = optimizers
         self.exp_name = exp_name
         self.hparams_dict = hparams_dict
-        print(hparams_dict)
         self.lr_schedulers = \
             [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
