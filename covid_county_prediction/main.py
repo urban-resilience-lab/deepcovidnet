@@ -10,18 +10,13 @@ import torch
 from datetime import timedelta, datetime
 
 
-def get_train_val_test_datasets(start_date, end_date, mode):
+def get_train_val_test_datasets(mode, use_cache=True):
     assert mode in ['all', 'train', 'test']
 
-    total_days = (end_date - start_date).days
-
-    train_days = int(total_days * global_config.train_split_pct)
-    test_days  = int(total_days * global_config.test_split_pct)
-    val_days   = total_days - train_days - test_days
-
-    train_start = start_date
-    val_start   = train_start + timedelta(train_days)
-    test_start  = val_start + timedelta(val_days)
+    train_start = global_config.data_start_date
+    val_start   = global_config.train_end_date
+    test_start  = global_config.val_end_date
+    end_date    = global_config.data_end_date
 
     train_dataset = None
     val_dataset   = None
@@ -31,31 +26,34 @@ def get_train_val_test_datasets(start_date, end_date, mode):
         train_dataset = CovidCountyDataset(
             train_start,
             val_start,
-            means_stds=None
+            means_stds=None,
+            use_cache=use_cache
         )
 
         val_dataset = CovidCountyDataset(
             val_start,
             test_start,
-            means_stds=train_dataset.means_stds
+            means_stds=train_dataset.means_stds,
+            use_cache=use_cache
         )
 
     if mode in ['all', 'test']:
+        if not use_cache:
+            assert mode == 'all', 'mode can\'t be test when use_cache=False'
         test_dataset = CovidCountyDataset(
             test_start,
             end_date,
-            means_stds=train_dataset.means_stds
+            means_stds=train_dataset.means_stds,
+            use_cache=use_cache
         )
 
     return train_dataset, val_dataset, test_dataset
 
 
-def get_train_val_test_loaders(start_date, end_date, mode):
+def get_train_val_test_loaders(mode):
     assert mode in ['all', 'train', 'test']
 
-    train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(
-                                                start_date, end_date, mode
-                                               )
+    train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(mode)
     train_loader = None
     val_loader = None
     test_loader = None
@@ -100,12 +98,16 @@ def main():
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
     global_config.set_static_val('data_save_dir', args.data_save_dir, overwrite=True)
 
-    start_date  = datetime.strptime(args.start_date, '%Y-%m-%d').date()
-    end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
+    if args.mode == 'save':
+        start_date  = datetime.strptime(args.start_date, '%Y-%m-%d').date()
+        end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
+    else:
+        start_date  = global_config.data_start_date
+        end_date    = global_config.data_end_date
 
     if args.mode == 'train':
         train_loader, val_loader, _ = get_train_val_test_loaders(
-                                        start_date, end_date, args.mode
+                                        args.mode
                                       )
 
         runner = CovidRunner(args.exp)
@@ -113,7 +115,7 @@ def main():
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
     elif args.mode == 'test':
-        test_loader = get_train_val_test_loaders(start_date, end_date, args.mode)[2]
+        test_loader = get_train_val_test_loaders(args.mode)[2]
 
         runner = CovidRunner(args.exp)
 
@@ -121,7 +123,7 @@ def main():
 
     elif args.mode == 'cache':
         train_dataset, val_dataset, test_dataset = \
-            get_train_val_test_datasets(start_date, end_date, mode='all')
+            get_train_val_test_datasets(mode='all', use_cache=False)
 
         train_dataset.save_cache_on_disk()
         val_dataset.save_cache_on_disk()
