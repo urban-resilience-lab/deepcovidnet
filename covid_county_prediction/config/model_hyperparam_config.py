@@ -1,6 +1,5 @@
 from covid_county_prediction.config.base_config import Config
 import sys
-import covid_county_prediction.config.global_config as global_config
 
 config = Config('Hyperparameters for DNN model')
 

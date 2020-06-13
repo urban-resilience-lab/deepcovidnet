@@ -8,7 +8,7 @@ import logging
 config = Config('Config for CovidCountyDataset')
 
 config.labels_key = 'labels'
-config.labels_class_boundaries = [2, 11, 79]  # 0.33, 0.67, 0.9 percentiles
+config.labels_class_boundaries = [2, 11, 80]  # 0.33, 0.67, 0.9 percentiles
 config.num_classes = len(config.labels_class_boundaries) + 1
 
 tensor_dir = os.path.join(global_config.data_save_dir, 'tensors/')

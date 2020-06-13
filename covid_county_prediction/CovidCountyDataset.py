@@ -40,7 +40,6 @@ class CovidCountyDataset(DataLoader, Dataset):
         while d < self.end_date:
             cur_labels = self.load_num_cases(d, d + timedelta(days=1)).raw_features[0]
             cur_labels = cur_labels.dropna()
-            cur_labels = cur_labels[cur_labels['new_cases'] >= 0].dropna()
 
             cur_end = d - timedelta(hyperparams.projection_days)
             cur_start = cur_end - timedelta(hyperparams.past_days_to_consider)
