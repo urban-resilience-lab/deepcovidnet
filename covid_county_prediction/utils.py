@@ -37,7 +37,7 @@ class ProgressMeter(object):
     def display(self, batch, epoch):
         entries = [self.prefix + ' ' + str(epoch) + ':' + self.batch_fmtstr.format(batch)]
         entries += [str(meter) for meter in self.meters]
-        print('\t'.join(entries))
+        print('\t'.join(entries), end='\n\n')
 
     def _get_batch_fmtstr(self, num_batches):
         num_digits = len(str(num_batches // 1))
