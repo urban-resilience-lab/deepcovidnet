@@ -30,19 +30,22 @@ class OrdinalBCEWithLogitsLoss(nn.Module):
 
 
 class CovidRunner(BaseRunner):
-    def __init__(self, exp_name, load_path=None):
+    def __init__(self, exp_name, load_path=None, sample_batch=None):
         net = CovidModule()
         self.is_optimizer_set = False
 
         if torch.cuda.is_available():
             net = net.cuda()
 
-        optimizer = self.get_optimizer(
-                        net.parameters()
-                    )
+        optimizer = self.get_optimizer(net.parameters())
 
         hparams_dict = hyperparams.get_hparams_dict()
         hparams_dict['optim_name'] = optimizer.__class__.__name__
+
+        if sample_batch:
+            net(sample_batch)  # forward pass to set embedding module
+            optimizer = self.get_optimizer(net.parameters())
+            self.is_optimizer_set = True
 
         super(CovidRunner, self).__init__(
             nets=[net],
@@ -54,6 +57,9 @@ class CovidRunner(BaseRunner):
             load_paths=[load_path],
             hparams_dict=hparams_dict
         )
+
+        if sample_batch:
+            self.writer.add_graph(self.nets[0], sample_batch)
 
     def get_metrics(self, pred, labels, get_loss=True):
         ordinal_labels = self._make_ordinal_labels(labels)

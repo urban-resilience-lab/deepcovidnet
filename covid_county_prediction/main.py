@@ -106,18 +106,22 @@ def main():
         end_date    = global_config.data_end_date
 
     if args.mode == 'train':
-        train_loader, val_loader, _ = get_train_val_test_loaders(
-                                        args.mode
-                                      )
+        train_loader, val_loader, _ = get_train_val_test_loaders(args.mode)
 
-        runner = CovidRunner(args.exp)
+        for b in train_loader:
+            break  # just init b with a batch
+
+        runner = CovidRunner(args.exp, sample_batch=b)
 
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
     elif args.mode == 'test':
         test_loader = get_train_val_test_loaders(args.mode)[2]
 
-        runner = CovidRunner(args.exp)
+        for b in train_loader:
+            break  # just init b with a batch
+
+        runner = CovidRunner(args.exp, sample_batch=b)
 
         runner.test(test_loader)
 
