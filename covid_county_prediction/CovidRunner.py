@@ -56,18 +56,14 @@ class CovidRunner(BaseRunner):
         )
 
     def get_metrics(self, pred, labels, get_loss=True):
-        loss = self.loss_fn(pred, labels)
+        ordinal_labels = self._make_ordinal_labels(labels)
+        loss = self.loss_fn(pred, ordinal_labels)
         acc  = self._get_accuracy(pred, labels)
 
-        class_preds = pred.argmax(dim=1)
+        class_preds = pred.sigmoid().round()
 
         class_preds_mean = class_preds.float().mean().item()
         class_preds_std  = class_preds.float().std().item()
-
-        float_labels = labels.float()
-
-        gt_mean = float_labels.mean().item()
-        gt_std  = float_labels.std().item()
 
         soi_mean = self.nets[0].deep_fm.second_order_interactions.mean().item()
         soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item()
@@ -77,8 +73,6 @@ class CovidRunner(BaseRunner):
             ('acc', acc),
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
-            ('gt_mean', gt_mean),
-            ('gt_std', gt_std),
             ('soi_mean', soi_mean),
             ('soi_std', soi_std)
         ]
@@ -100,9 +94,7 @@ class CovidRunner(BaseRunner):
 
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
-        labels = self._make_ordinal_labels(
-                        batch_dict.pop(dataset_config.labels_key)
-                    )
+        labels = batch_dict.pop(dataset_config.labels_key)
         pred = self.nets[0](batch_dict)
 
         if not self.is_optimizer_set:
@@ -142,5 +134,6 @@ class CovidRunner(BaseRunner):
         return self.get_metrics(pred, labels, get_loss=False)
 
     def _get_accuracy(self, pred, labels):
-        # assert False, 'Needs Testing'
-        return (pred.argmax(dim=1) == labels).sum().item() / labels.shape[0]
+        class_preds = pred.sigmoid().round().flatten()
+        flat_labels = labels.flatten()
+        return (class_preds == flat_labels).sum().item() / labels.shape[0]
