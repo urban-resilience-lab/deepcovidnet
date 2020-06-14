@@ -54,7 +54,7 @@ class CovidRunner(BaseRunner):
             nets=[net],
             loss_fn=OrdinalBCEWithLogitsLoss(),
             optimizers=[optimizer],
-            best_metric_name='loss',
+            best_metric_name='acc',
             should_minimize_best_metric=True,
             exp_name=exp_name,
             load_paths=[load_path],
@@ -152,6 +152,9 @@ class CovidRunner(BaseRunner):
         class_preds[:, -1] = prob[:, -1]
 
         class_preds = class_preds.argmax(dim=1)
+
+        if torch.cuda.is_available():
+            class_preds = class_preds.cuda()
 
         return (class_preds == labels).sum().item() / labels.shape[0]
 
