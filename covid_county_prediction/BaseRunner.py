@@ -178,28 +178,11 @@ class BaseRunner(metaclass=ABCMeta):
 
             if val_loader is not None or validate_on_train:
                 if(sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
-                    for i in range(len(self.nets)):
-                        torch.save({
-                            'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
-                            'state_dict': self.nets[i].state_dict(),
-                            'best_metric_val': self.best_meter.avg,
-                            'best_metric_name': self.best_metric_name
-                            }, os.path.join(config.models_base_dir,
-                                self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
-                                'checkpoint_' + str(epoch + 1) + '.pth')
-                        )
-                        self.best_metric_val = self.best_meter.avg
+                    self.save_nets(epoch)
+                    self.best_metric_val = self.best_meter.avg
+
             elif epoch % config.save_freq == 0:
-                for i in range(len(self.nets)):
-                    torch.save({
-                        'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
-                        'state_dict': self.nets[i].state_dict(),
-                        'best_metric_val': self.best_meter.avg,
-                        'best_metric_name': self.best_metric_name
-                        }, os.path.join(config.models_base_dir,
-                            self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
-                            'checkpoint_' + str(epoch + 1) + '.pth')
-                    )
+                self.save_nets(epoch)
 
             for i in range(len(self.lr_schedulers)):
                 if(
@@ -255,6 +238,18 @@ class BaseRunner(metaclass=ABCMeta):
                 [x[0] for x in metrics])
             )
         return metrics
+
+    def save_nets(self, epoch):
+        for i in range(len(self.nets)):
+            torch.save({
+                'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
+                'state_dict': self.nets[i].state_dict(),
+                'best_metric_val': self.best_meter.avg,
+                'best_metric_name': self.best_metric_name
+                }, os.path.join(config.models_base_dir,
+                    self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
+                    'checkpoint_' + str(epoch + 1) + '.pth')
+            )
 
     @abstractmethod
     def train_batch_and_get_metrics(self, batch):
