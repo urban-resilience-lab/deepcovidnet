@@ -153,4 +153,7 @@ class CovidRunner(BaseRunner):
 
         class_preds = class_preds.argmax(dim=1)
 
+        if torch.cuda.is_available():
+            class_preds = class_preds.cuda()
+
         return (class_preds == labels).sum().item() / labels.shape[0]
