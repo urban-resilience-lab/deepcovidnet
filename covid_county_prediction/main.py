@@ -3,6 +3,7 @@ from covid_county_prediction.CovidRunner import CovidRunner
 from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
+import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import argparse
 from torch.utils.data import DataLoader, random_split
 import logging
@@ -114,6 +115,7 @@ def main():
         train_loader, val_loader, _ = get_train_val_test_loaders(args.mode)
 
         for b in train_loader:
+            b.pop(dataset_config.labels_key)
             break  # just init b with a batch
 
         runner = CovidRunner(args.exp, sample_batch=b)
@@ -124,7 +126,8 @@ def main():
         assert args.load_path, 'model path not specified'
         test_loader = get_train_val_test_loaders(args.mode)[2]
 
-        for b in train_loader:
+        for b in test_loader:
+            b.pop(dataset_config.labels_key)
             break  # just init b with a batch
 
         runner = CovidRunner(args.exp, load_path=args.load_path, sample_batch=b)

@@ -36,6 +36,9 @@ class CovidRunner(BaseRunner):
 
         if torch.cuda.is_available():
             net = net.cuda()
+            if sample_batch:
+                for k in sample_batch:
+                    sample_batch[k] = sample_batch[k].cuda()
 
         optimizer = self.get_optimizer(net.parameters())
 
