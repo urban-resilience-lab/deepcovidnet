@@ -38,12 +38,16 @@ def get_train_val_test_datasets(mode, use_cache=True):
         )
 
     if mode in ['all', 'test']:
+        means_stds = None
+
         if not use_cache:
             assert mode == 'all', 'mode can\'t be test when use_cache=False'
+            means_stds = train_dataset.means_stds
+
         test_dataset = CovidCountyDataset(
             test_start,
             end_date,
-            means_stds=train_dataset.means_stds,
+            means_stds=means_stds,
             use_cache=use_cache
         )
 
@@ -93,6 +97,7 @@ def main():
     parser.add_argument('--start-date', default=str(global_config.data_start_date))
     parser.add_argument('--end-date', default=str(global_config.data_end_date))
     parser.add_argument('--save-func', default='save_weather_data')
+    parser.add_argument('--load-path', default='')
     args = parser.parse_args()
 
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
@@ -115,9 +120,10 @@ def main():
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
     elif args.mode == 'test':
+        assert args.load_path, 'model path not specified'
         test_loader = get_train_val_test_loaders(args.mode)[2]
 
-        runner = CovidRunner(args.exp)
+        runner = CovidRunner(args.exp, load_path=args.load_path)
 
         runner.test(test_loader)
 
