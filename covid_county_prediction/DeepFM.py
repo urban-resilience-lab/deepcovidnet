@@ -5,14 +5,14 @@ import torch
 
 
 class DeepFM(nn.Module):
-    def __init__(self, num_classes=dataset_config.num_classes,
+    def __init__(self, num_classifiers=dataset_config.num_classifiers,
                  feature_dim=hyperparams.embedding_size,
                  num_features=dataset_config.num_features):
         super(DeepFM, self).__init__()
 
         assert num_features > 1
 
-        self.num_classes = num_classes
+        self.num_classifiers = num_classifiers
         self.feature_dim = feature_dim
         self.num_features = num_features
 
@@ -28,7 +28,7 @@ class DeepFM(nn.Module):
             nn.Linear(
                 hyperparams.higher_order_features_size +
                 int(self.num_features * (self.num_features - 1) / 2),
-                self.num_classes
+                self.num_classifiers
             )
         )
 
