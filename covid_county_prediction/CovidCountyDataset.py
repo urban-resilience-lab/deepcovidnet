@@ -111,7 +111,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                 self.cache = torch.load(saved_cache_path)
                 self.is_cached = True
             else:
-                raise Exception('use_cache is True but saved file is absent')
+                raise Exception(f'use_cache is True but {saved_cache_path} is absent')
 
     def _classify_label(self, label):
         assert ceil(label) == floor(label) and label == label
