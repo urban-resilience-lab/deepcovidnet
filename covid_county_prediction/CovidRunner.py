@@ -54,7 +54,7 @@ class CovidRunner(BaseRunner):
             nets=[net],
             loss_fn=OrdinalBCEWithLogitsLoss(),
             optimizers=[optimizer],
-            best_metric_name='loss',
+            best_metric_name='acc',
             should_minimize_best_metric=True,
             exp_name=exp_name,
             load_paths=[load_path],
