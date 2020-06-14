@@ -55,7 +55,7 @@ class CovidRunner(BaseRunner):
             loss_fn=OrdinalBCEWithLogitsLoss(),
             optimizers=[optimizer],
             best_metric_name='acc',
-            should_minimize_best_metric=True,
+            should_minimize_best_metric=False,
             exp_name=exp_name,
             load_paths=[load_path],
             hparams_dict=hparams_dict
@@ -159,4 +159,4 @@ class CovidRunner(BaseRunner):
         return (class_preds == labels).sum().item() / labels.shape[0]
 
     def get_batch_size(self, batch):
-        return batch[dataset_config.labels_key].shape[0]
+        return batch[list(batch.keys())[0]].shape[0]
