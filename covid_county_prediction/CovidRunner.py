@@ -92,7 +92,7 @@ class CovidRunner(BaseRunner):
             return metrics
 
     def _make_ordinal_labels(self, labels):
-        ans = torch.zeros(labels.shape[0], dataset_config.num_classes)
+        ans = torch.zeros(labels.shape[0], dataset_config.num_classifiers)
         for i, l in enumerate(labels):
             ans[i][:l] = 1
 
@@ -143,11 +143,13 @@ class CovidRunner(BaseRunner):
         return self.get_metrics(pred, labels, get_loss=False)
 
     def _get_accuracy(self, pred, labels):
-        class_preds = torch.zeros_like(pred)
-        class_preds[:, 0] = 1 - pred[:, 0]
+        prob = pred.sigmoid()
+
+        class_preds = torch.zeros(labels.shape[0], dataset_config.num_classes)
+        class_preds[:, 0] = 1 - prob[:, 0]
         for i in range(1, class_preds.shape[1] - 1):
-            class_preds[:, i] = pred[:, i - 1] - pred[:, i]
-        class_preds[:, -1] = pred[:, -1]
+            class_preds[:, i] = prob[:, i - 1] - prob[:, i]
+        class_preds[:, -1] = prob[:, -1]
 
         class_preds = class_preds.argmax(dim=1)
 
