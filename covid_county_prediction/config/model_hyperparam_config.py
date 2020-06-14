@@ -22,7 +22,7 @@ config.past_days_to_consider        = 20
 
 
 def get_hparams_dict():
-    hyperparams = config.__dict__
+    hyperparams = config.__dict__.copy()
     for k in Config.static_members:
         if k in hyperparams:
             hyperparams.pop(k)
