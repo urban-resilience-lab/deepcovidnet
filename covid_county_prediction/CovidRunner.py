@@ -154,3 +154,6 @@ class CovidRunner(BaseRunner):
         class_preds = class_preds.argmax(dim=1)
 
         return (class_preds == labels).sum().item() / labels.shape[0]
+
+    def get_batch_size(self, batch):
+        return batch[dataset_config.labels_key].shape[0]

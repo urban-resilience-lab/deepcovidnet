@@ -103,7 +103,7 @@ class BaseRunner(metaclass=ABCMeta):
 
         for i, batch in enumerate(data_loader):
             batch_number = epoch * len(data_loader) + i + 1
-            data_time_meter.update(time.time() - start_time)
+            data_time_meter.update(time.time() - start_time, n=self.get_batch_size(batch))
 
             # transfer from CPU -> GPU asynchronously if at all
             if torch.cuda.is_available():
@@ -129,9 +129,9 @@ class BaseRunner(metaclass=ABCMeta):
 
                     if not progress_display_made:
                         other_meters.append(utils.AverageMeter(metric_name))
-                        other_meters[j].update(metric_val)
+                        other_meters[j].update(metric_val, n=self.get_batch_size(batch))
                     else:
-                        other_meters[j].update(metric_val)
+                        other_meters[j].update(metric_val, n=self.get_batch_size(batch))
 
                 self.global_step += 1
 
@@ -142,7 +142,7 @@ class BaseRunner(metaclass=ABCMeta):
             elif not progress_display_made:
                 progress = utils.ProgressMeter(len(data_loader), [batch_time_meter, data_time_meter], prefix=prefix)
 
-            batch_time_meter.update(time.time() - start_time)
+            batch_time_meter.update(time.time() - start_time, n=self.get_batch_size(batch))
             start_time = time.time()
 
             if i % config.print_freq == 0:
@@ -243,7 +243,7 @@ class BaseRunner(metaclass=ABCMeta):
         did_find_name = False
         for (metric_name, metric_val) in metrics:
             if metric_name == self.best_metric_name:
-                self.best_meter.update(metric_val)
+                self.best_meter.update(metric_val, n=self.get_batch_size(batch))
                 did_find_name = True
                 break
 
@@ -272,4 +272,8 @@ class BaseRunner(metaclass=ABCMeta):
         '''Perform forward pass here.
 
             Return: metrics - [(metric_name, metric_val (should be scalar))]'''
+        return
+
+    @abstractmethod
+    def get_batch_size(self, batch):
         return
