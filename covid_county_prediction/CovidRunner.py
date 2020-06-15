@@ -68,6 +68,8 @@ class CovidRunner(BaseRunner):
         ordinal_labels = self._make_ordinal_labels(labels)
         loss = self.loss_fn(pred, ordinal_labels)
         acc  = self._get_accuracy(pred, labels)
+        classifier_acc = \
+            (pred.sigmoid().round().flatten() == ordinal_labels.flatten()).sum().item() / pred.numel()
 
         class_preds = pred.sigmoid().round()
 
@@ -80,6 +82,7 @@ class CovidRunner(BaseRunner):
         metrics = [
             ('loss', loss.mean().item()),
             ('acc', acc),
+            ('classifier_acc', classifier_acc),
             ('class_preds_mean', class_preds_mean),
             ('class_preds_std', class_preds_std),
             ('soi_mean', soi_mean),
