@@ -13,7 +13,7 @@ config.counties_save_path = os.path.join(global_config.data_save_dir, 'features_
 
 def get_county_info(county_info_link):
     if os.path.exists(config.counties_save_path):
-        df = pd.read_csv(config.counties_save_path).set_index('FIPS')
+        df = pd.read_csv(config.counties_save_path, dtype={'FIPS': str}).set_index('FIPS')
         return df
 
     df = pd.read_html(county_info_link)[0].iloc[:-1].set_index('FIPS')
