@@ -87,12 +87,12 @@ def get_train_val_test_loaders(mode):
 
 
 def main():
-    logging.getLogger().setLevel(logging.WARNING)
+    logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--exp', required=True)
-    parser.add_argument('--mode', default='train', choices=['train', 'test', 'cache', 'save'])
+    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
     parser.add_argument('--start-date', default=str(global_config.data_start_date))
@@ -122,17 +122,21 @@ def main():
 
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
-    elif args.mode == 'test':
+    elif args.mode == 'test' or args.mode == 'val':
         assert args.load_path, 'model path not specified'
-        test_loader = get_train_val_test_loaders(args.mode)[2]
 
-        for b in test_loader:
+        if args.mode == 'val':
+            data_loader = get_train_val_test_loaders('train')[1]
+        else:
+            data_loader = get_train_val_test_loaders(args.mode)[2]
+
+        for b in data_loader:
             b.pop(dataset_config.labels_key)
             break  # just init b with a batch
 
         runner = CovidRunner(args.exp, load_path=args.load_path, sample_batch=b)
 
-        runner.test(test_loader)
+        runner.test(data_loader)
 
     elif args.mode == 'cache':
         train_dataset, val_dataset, test_dataset = \
