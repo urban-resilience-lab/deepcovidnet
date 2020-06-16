@@ -1,14 +1,14 @@
 import covid_county_prediction.config.global_config as global_config
 from covid_county_prediction.CovidRunner import CovidRunner
+from covid_county_prediction.OrdinalCovidRunner import OrdinalCovidRunner
 from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import argparse
-from torch.utils.data import DataLoader, random_split
+from torch.utils.data import DataLoader
 import logging
-import torch
-from datetime import timedelta, datetime
+from datetime import datetime
 
 
 def get_train_val_test_datasets(mode, use_cache=True):
@@ -86,12 +86,20 @@ def get_train_val_test_loaders(mode):
     return train_loader, val_loader, test_loader
 
 
+def get_runner(runner_type):
+    if runner_type == 'regular':
+        return CovidRunner
+    elif runner_type == 'ordinal':
+        return OrdinalCovidRunner
+
+
 def main():
     logging.getLogger().setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--exp', required=True)
+    parser.add_argument('--runner', choices=['regular', 'ordinal'])
     parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
@@ -104,13 +112,6 @@ def main():
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
     global_config.set_static_val('data_save_dir', args.data_save_dir, overwrite=True)
 
-    if args.mode == 'save':
-        start_date  = datetime.strptime(args.start_date, '%Y-%m-%d').date()
-        end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
-    else:
-        start_date  = global_config.data_start_date
-        end_date    = global_config.data_end_date
-
     if args.mode == 'train':
         train_loader, val_loader, _ = get_train_val_test_loaders(args.mode)
 
@@ -118,7 +119,7 @@ def main():
             b.pop(dataset_config.labels_key)
             break  # just init b with a batch
 
-        runner = CovidRunner(args.exp, sample_batch=b)
+        runner = get_runner(args.runner)(args.exp, load_path=args.load_path, sample_batch=b)
 
         runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
 
@@ -134,7 +135,7 @@ def main():
             b.pop(dataset_config.labels_key)
             break  # just init b with a batch
 
-        runner = CovidRunner(args.exp, load_path=args.load_path, sample_batch=b)
+        runner = get_runner(args.runner)(args.exp, load_path=args.load_path, sample_batch=b)
 
         runner.test(data_loader)
 
@@ -147,6 +148,9 @@ def main():
         test_dataset.save_cache_on_disk()
 
     elif args.mode == 'save':
+        start_date  = datetime.strptime(args.start_date, '%Y-%m-%d').date()
+        end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
+
         d = DataSaver()
         getattr(d, args.save_func)(start_date, end_date)
 

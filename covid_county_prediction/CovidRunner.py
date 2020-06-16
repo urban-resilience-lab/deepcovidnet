@@ -6,32 +6,14 @@ import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 
 
-def _check_no_nan_input(f):
-    def wrapper(s, batch_dict):
-        for k in batch_dict:
-            if k != dataset_config.labels_key:
-                assert (batch_dict[k] == batch_dict[k]).all(), f'{k} has nan/inf elements'
-
-        return f(s, batch_dict)
-
-    return wrapper
-
-
-class OrdinalBCEWithLogitsLoss(nn.Module):
-    def __init__(self):
-        super(OrdinalBCEWithLogitsLoss, self).__init__()
-        self.bce_loss = nn.BCEWithLogitsLoss()
-
-    def forward(self, pred, labels):
-        return self.bce_loss(
-                pred.flatten().unsqueeze(1),
-                labels.flatten().unsqueeze(1),
-            )
-
+def get_default_net():
+    return CovidModule(output_neurons=dataset_config.num_classes)
 
 class CovidRunner(BaseRunner):
-    def __init__(self, exp_name, load_path=None, sample_batch=None):
-        net = CovidModule()
+    def __init__(
+        self, exp_name, net=get_default_net(), loss_fn=nn.CrossEntropyLoss(),
+        load_path=None, sample_batch=None
+    ):
         self.is_optimizer_set = False
 
         if torch.cuda.is_available():
@@ -52,7 +34,7 @@ class CovidRunner(BaseRunner):
 
         super(CovidRunner, self).__init__(
             nets=[net],
-            loss_fn=OrdinalBCEWithLogitsLoss(),
+            loss_fn=loss_fn,
             optimizers=[optimizer],
             best_metric_name='acc',
             should_minimize_best_metric=False,
@@ -65,16 +47,14 @@ class CovidRunner(BaseRunner):
             self.writer.add_graph(self.nets[0], sample_batch)
 
     def get_metrics(self, pred, labels, get_loss=True):
-        ordinal_labels = self._make_ordinal_labels(labels)
-        loss = self.loss_fn(pred, ordinal_labels)
-        acc  = self._get_accuracy(pred, labels)
-        classifier_acc = \
-            (pred.sigmoid().round().flatten() == ordinal_labels.flatten()).sum().item() / pred.numel()
+        loss = self.loss_fn(pred, self.transform_labels(labels))
 
-        class_preds = pred.sigmoid().round()
+        class_pred = self.get_class_pred(pred)
 
-        class_preds_mean = class_preds.float().mean().item()
-        class_preds_std  = class_preds.float().std().item()
+        acc = self._get_accuracy(class_pred, labels)
+
+        class_pred_mean = class_pred.float().mean().item()
+        class_pred_std  = class_pred.float().std().item()
 
         soi_mean = self.nets[0].deep_fm.second_order_interactions.mean().item()
         soi_std  = self.nets[0].deep_fm.second_order_interactions.std().item()
@@ -82,27 +62,18 @@ class CovidRunner(BaseRunner):
         metrics = [
             ('loss', loss.mean().item()),
             ('acc', acc),
-            ('classifier_acc', classifier_acc),
-            ('class_preds_mean', class_preds_mean),
-            ('class_preds_std', class_preds_std),
+            ('class_preds_mean', class_pred_mean),
+            ('class_preds_std', class_pred_std),
             ('soi_mean', soi_mean),
             ('soi_std', soi_std)
         ]
+
+        metrics = metrics + self._get_extra_metrics(pred, labels)
 
         if get_loss:
             return loss, metrics
         else:
             return metrics
-
-    def _make_ordinal_labels(self, labels):
-        ans = torch.zeros(labels.shape[0], dataset_config.num_classifiers)
-        for i, l in enumerate(labels):
-            ans[i][:l] = 1
-
-        if torch.cuda.is_available():
-            ans = ans.cuda()
-
-        return ans
 
     def train_batch_and_get_metrics(self, batch_dict):
         # forward pass
@@ -145,21 +116,17 @@ class CovidRunner(BaseRunner):
 
         return self.get_metrics(pred, labels, get_loss=False)
 
-    def _get_accuracy(self, pred, labels):
-        prob = pred.sigmoid()
-
-        class_preds = torch.zeros(labels.shape[0], dataset_config.num_classes)
-        class_preds[:, 0] = 1 - prob[:, 0]
-        for i in range(1, class_preds.shape[1] - 1):
-            class_preds[:, i] = prob[:, i - 1] - prob[:, i]
-        class_preds[:, -1] = prob[:, -1]
-
-        class_preds = class_preds.argmax(dim=1)
-
-        if torch.cuda.is_available():
-            class_preds = class_preds.cuda()
-
-        return (class_preds == labels).sum().item() / labels.shape[0]
+    def _get_accuracy(self, class_pred, labels):
+        return (class_pred == labels).sum().item() / labels.shape[0]
 
     def get_batch_size(self, batch):
         return batch[list(batch.keys())[0]].shape[0]
+
+    def transform_labels(self, labels):
+        return labels
+
+    def get_class_pred(self, pred)
+        return pred.argmax(dim=1)
+
+    def _get_extra_metrics(self, pred, label):
+        return []
