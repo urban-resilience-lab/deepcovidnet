@@ -100,6 +100,14 @@ class RawFeatureExtractor():
         cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
         main_df.drop(cols_to_remove, axis=1, inplace=True)
 
+        svi_df = pd.read_csv(
+                        config.svi_df_path,
+                        usecols=['AREA_SQMI', 'E_TOTPOP', 'FIPS'],
+                        dtype={'FIPS': str}
+                    ).set_index('FIPS')
+
+        main_df['Population Density'] = svi_df['E_TOTPOP'] / svi_df['AREA_SQMI']
+
         return ConstantFeatures(main_df, 'open_census_data',
                                 feature_saver=saver_config.census_data)
 
