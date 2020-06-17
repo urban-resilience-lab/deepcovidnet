@@ -44,20 +44,21 @@ class CovidCountyDataset(DataLoader, Dataset):
             cur_end = d - timedelta(hyperparams.projection_days)
             cur_start = cur_end - timedelta(hyperparams.past_days_to_consider)
 
-            self.labels.append(
-                (
-                    cur_start,
-                    cur_end,
-                    cur_labels
+            if cur_labels.shape[0] > 0:
+                self.labels.append(
+                    (
+                        cur_start,
+                        cur_end,
+                        cur_labels
+                    )
                 )
-            )
 
-            if self.labels_lens:
-                self.labels_lens.append(
-                    self.labels_lens[-1] + cur_labels.shape[0]
-                )
-            else:
-                self.labels_lens.append(cur_labels.shape[0])
+                if self.labels_lens:
+                    self.labels_lens.append(
+                        self.labels_lens[-1] + cur_labels.shape[0]
+                    )
+                else:
+                    self.labels_lens.append(cur_labels.shape[0])
             d += timedelta(days=1)
 
         training_data_end_date = \
