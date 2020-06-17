@@ -17,7 +17,10 @@ class DeepFM(nn.Module):
         self.num_features = num_features
 
         self.deep_processor = nn.Sequential(
-                nn.Linear(self.num_features * self.feature_dim, 1024),
+                nn.Linear(self.num_features * self.feature_dim, 2048),
+                nn.ReLU(),
+                nn.BatchNorm1d(2048),
+                nn.Linear(2048, 1024),
                 nn.ReLU(),
                 nn.BatchNorm1d(1024),
                 nn.Linear(1024, 512),
