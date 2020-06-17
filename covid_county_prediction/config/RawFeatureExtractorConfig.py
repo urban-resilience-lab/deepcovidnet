@@ -109,6 +109,8 @@ config.default_cat = 'Other'
 # open census
 config.sg_open_census_data_path = os.path.join(global_config.data_base_dir, "safegraph_open_census_data/data/")
 config.sg_open_census_metadata_path = os.path.join(global_config.data_base_dir, "safegraph_open_census_data/metadata/")
+config.svi_df_path = os.path.join(global_config.data_base_dir, "SVI2018.csv")  # downloaded from https://data.cdc.gov/Health-Statistics/Social-Vulnerability-Index-2018-United-States-coun/48va-t53r
+config.ccvi_csv_path = os.path.join(global_config.data_base_dir, "CCVI.csv")  # downloaded from https://docs.google.com/spreadsheets/d/1qEPuziEpxj-VG11IAZoa5RWEr4GhNoxMn7aBdU76O5k/edit#gid=549685106
 
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')

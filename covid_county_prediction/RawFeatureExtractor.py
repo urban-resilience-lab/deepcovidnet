@@ -101,12 +101,33 @@ class RawFeatureExtractor():
         main_df.drop(cols_to_remove, axis=1, inplace=True)
 
         svi_df = pd.read_csv(
-                        config.svi_df_path,
-                        usecols=['AREA_SQMI', 'E_TOTPOP', 'FIPS'],
-                        dtype={'FIPS': str}
-                    ).set_index('FIPS')
+                    config.svi_df_path,
+                    usecols=['AREA_SQMI', 'E_TOTPOP', 'FIPS'],
+                    dtype={'FIPS': str}
+                ).set_index('FIPS')
 
-        main_df['Population Density'] = svi_df['E_TOTPOP'] / svi_df['AREA_SQMI']
+        svi_df['Population Density'] = svi_df['E_TOTPOP'] / svi_df['AREA_SQMI']
+
+        svi_df = svi_df[['Population Density']]
+
+        main_df = main_df.merge(
+                    svi_df, how='outer', suffixes=('', ''),
+                    left_index=True, right_index=True
+                )
+
+        ccvi_df = pd.read_csv(
+                    config.ccvi_csv_path,
+                    dtype={'FIPS (5-digit)': str}
+                ).set_index('FIPS (5-digit)')
+
+        ccvi_df = ccvi_df.drop(
+                    columns=['State', 'State Abbreviation', 'County']
+                )
+
+        main_df = main_df.merge(
+                    ccvi_df, how='outer', suffixes=('', ''),
+                    left_index=True, right_index=True
+                )
 
         return ConstantFeatures(main_df, 'open_census_data',
                                 feature_saver=saver_config.census_data)
