@@ -15,7 +15,7 @@ config.lr_decay_factor              = 0.9
 
 # other params
 config.batch_size                   = 64
-config.embedding_size               = 128
+config.embedding_size               = 512
 config.higher_order_features_size   = 512
 config.projection_days              = 7
 config.past_days_to_consider        = 13
