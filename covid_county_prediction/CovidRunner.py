@@ -9,6 +9,7 @@ import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 def get_default_net():
     return CovidModule(output_neurons=dataset_config.num_classes)
 
+
 class CovidRunner(BaseRunner):
     def __init__(
         self, exp_name, net=get_default_net(), loss_fn=nn.CrossEntropyLoss(),
@@ -47,7 +48,7 @@ class CovidRunner(BaseRunner):
             self.writer.add_graph(self.nets[0], sample_batch)
 
     def get_metrics(self, pred, labels, get_loss=True):
-        loss = self.loss_fn(pred, self.transform_labels(labels))
+        loss = self.loss_fn(pred, labels)
 
         class_pred = self.get_class_pred(pred)
 
@@ -66,7 +67,7 @@ class CovidRunner(BaseRunner):
             ('class_preds_std', class_pred_std),
             ('soi_mean', soi_mean),
             ('soi_std', soi_std)
-        ]
+        ] + self.get_classwise_recall_metrics(class_pred, labels)
 
         metrics = metrics + self._get_extra_metrics(pred, labels)
 
@@ -122,11 +123,20 @@ class CovidRunner(BaseRunner):
     def get_batch_size(self, batch):
         return batch[list(batch.keys())[0]].shape[0]
 
-    def transform_labels(self, labels):
-        return labels
-
-    def get_class_pred(self, pred)
+    def get_class_pred(self, pred):
         return pred.argmax(dim=1)
 
-    def _get_extra_metrics(self, pred, label):
+    def _get_extra_metrics(self, pred, labels):
         return []
+
+    def get_classwise_recall_metrics(self, class_pred, labels):
+        metrics = []
+        for c in range(dataset_config.num_classes):
+            tp = ((class_pred == labels) & (class_pred == c)).sum().item()
+            total = (labels == c).sum().item()
+
+            recall = tp / total if total else (1 if tp else 0)
+
+            metrics.append((f'class_{c}_recall', recall))
+
+        return metrics
