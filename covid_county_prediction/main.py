@@ -99,7 +99,7 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--exp', required=True)
-    parser.add_argument('--runner', default='regular', choices=['regular', 'ordinal'])
+    parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal'])
     parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
