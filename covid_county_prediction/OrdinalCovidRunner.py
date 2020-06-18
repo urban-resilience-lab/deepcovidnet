@@ -57,6 +57,24 @@ class OrdinalCrossEntropy(nn.Module):
         return self.loss(class_prob, labels)
 
 
+class CustomLoss(nn.Module):
+    def __init__(self):
+        super(CustomLoss, self).__init__()
+        self.bce = OrdinalBCEWithLogitsLoss()
+        self.ce  = OrdinalCrossEntropy()
+        self.last_losses = None
+
+    def forward(self, pred, labels):
+        bce = self.bce(pred, labels)
+        ce  = self.ce(pred, labels) * hyperparams.ce_coeff
+
+        loss = bce + ce
+
+        self.last_losses = [bce.item() / loss.item(), ce.item() / loss.item()]
+
+        return loss
+
+
 class OrdinalCovidRunner(CovidRunner):
     def __init__(self, exp_name, load_path=None, sample_batch=None):
         net = CovidModule(output_neurons=dataset_config.num_classifiers)
@@ -64,7 +82,7 @@ class OrdinalCovidRunner(CovidRunner):
         super(OrdinalCovidRunner, self).__init__(
             exp_name=exp_name,
             net=net,
-            loss_fn=OrdinalBCEWithLogitsLoss(),
+            loss_fn=CustomLoss(),
             load_path=load_path,
             sample_batch=sample_batch
         )
@@ -75,7 +93,9 @@ class OrdinalCovidRunner(CovidRunner):
             (pred.sigmoid().round().flatten() == ordinal_labels.flatten()).sum().item() / pred.numel()
 
         metrics = [
-            ('classifier_acc', classifier_acc)
+            ('classifier_acc', classifier_acc),
+            ('bce_contrib', self.loss_fn.last_losses[0]),
+            ('ce_contrib', self.loss_fn.last_losses[1])
         ]
 
         return metrics
