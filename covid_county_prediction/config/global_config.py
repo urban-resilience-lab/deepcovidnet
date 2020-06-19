@@ -3,7 +3,6 @@ import sys
 import os
 from pathlib import Path
 from datetime import date, timedelta
-import covid_county_prediction.config.model_hyperparam_config as hyperparams
 
 
 config = Config('Global config parameters')
