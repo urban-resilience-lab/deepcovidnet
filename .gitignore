@@ -6,3 +6,4 @@ runs
 *.ipynb
 *.pdf
 models
+*nohup*
