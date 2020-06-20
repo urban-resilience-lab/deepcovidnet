@@ -5,22 +5,15 @@ import torch
 
 
 class DeepFM(nn.Module):
-    def __init__(self, output_neurons,
-                 feature_dim=hyperparams.embedding_size,
-                 num_features=dataset_config.num_features):
+    def __init__(self, output_neurons):
         super(DeepFM, self).__init__()
 
-        assert num_features > 1
-
         self.output_neurons = output_neurons
-        self.feature_dim = feature_dim
-        self.num_features = num_features
+        self.feature_dim = hyperparams.embedding_size
+        self.num_features = dataset_config.num_features
 
         self.deep_processor = nn.Sequential(
-                nn.Linear(self.num_features * self.feature_dim, 2048),
-                nn.ReLU(),
-                nn.BatchNorm1d(2048),
-                nn.Linear(2048, 1024),
+                nn.Linear(self.num_features * self.feature_dim, 1024),
                 nn.ReLU(),
                 nn.BatchNorm1d(1024),
                 nn.Linear(1024, 512),
@@ -42,7 +35,7 @@ class DeepFM(nn.Module):
     def forward(self, features_dict):
         '''
         Args:
-            feature_list: dict of PyTorch tensors of shape (batch_size, self.feature_dim)
+            feature_dict: dict of PyTorch tensors of shape (batch_size, self.feature_dim)
         '''
         assert dataset_config.labels_key not in features_dict
 

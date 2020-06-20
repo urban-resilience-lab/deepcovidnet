@@ -4,6 +4,7 @@ import torch
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import torch.nn as nn
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
+from covid_county_prediction.Hyperparameters import HPLevel
 
 
 def get_default_net():
@@ -25,8 +26,10 @@ class CovidRunner(BaseRunner):
 
         optimizer = self.get_optimizer(net.parameters())
 
-        hparams_dict = hyperparams.get_hparams_dict()
-        hparams_dict['optim_name'] = optimizer.__class__.__name__
+        hyperparams.add(
+            name='optim_name', val=optimizer.__class__.__name__, hp_range=None,
+            hp_type=str, level=HPLevel.NONE
+        )
 
         if sample_batch:
             net(sample_batch)  # forward pass to set embedding module
@@ -40,8 +43,7 @@ class CovidRunner(BaseRunner):
             best_metric_name='acc',
             should_minimize_best_metric=False,
             exp_name=exp_name,
-            load_paths=[load_path],
-            hparams_dict=hparams_dict
+            load_paths=[load_path]
         )
 
         if sample_batch:
