@@ -21,8 +21,7 @@ class BaseRunner(metaclass=ABCMeta):
 
     def __init__(
         self, nets, loss_fn, optimizers, best_metric_name,
-        should_minimize_best_metric, exp_name, hparams_dict,
-        load_paths=None
+        should_minimize_best_metric, exp_name, load_paths=None
     ):
         assert isinstance(nets, list), 'nets must be a list'
         assert isinstance(optimizers, list), 'optimizers must be a list'
@@ -37,7 +36,6 @@ class BaseRunner(metaclass=ABCMeta):
         self.loss_fn = loss_fn
         self.optimizers = optimizers
         self.exp_name = exp_name
-        self.hparams_dict = hparams_dict
         self.lr_schedulers = \
             [lr_scheduler.StepLR(optimizers[i], hyperparams.lr_decay_step_size, hyperparams.lr_decay_factor)
                 for i in range(len(self.optimizers))]
@@ -151,7 +149,7 @@ class BaseRunner(metaclass=ABCMeta):
         if i % config.print_freq != 0:
             progress.display(i + 1, epoch)
 
-    def train(self, train_loader, epochs, val_loader=None, validate_on_train=False):
+    def train(self, train_loader, val_loader=None, validate_on_train=False):
         assert val_loader is None or not validate_on_train
 
         # add signal handlers
@@ -168,7 +166,8 @@ class BaseRunner(metaclass=ABCMeta):
 
         train_metrics_calc = self.train_batch_and_track_metrics if validate_on_train else self.train_batch_and_get_metrics
 
-        for epoch in range(epochs):
+        bad_epochs = 0
+        for epoch in range(hyperparams.epochs):
             self.best_meter.reset()
             self.run(train_loader, 'train', epoch, train_metrics_calc)
 
@@ -180,6 +179,11 @@ class BaseRunner(metaclass=ABCMeta):
                 if(sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
                     self.save_nets(epoch)
                     self.best_metric_val = self.best_meter.avg
+                    bad_epochs = 0
+                else:
+                    bad_epochs += 1
+                    if bad_epochs >= hyperparams.early_stopping_num:
+                        return
 
             elif epoch % config.save_freq == 0:
                 self.save_nets(epoch)
@@ -208,7 +212,7 @@ class BaseRunner(metaclass=ABCMeta):
     def train_end(self, *args, **kwargs):
         self.output_weight_distribution("final_weights")
         self.writer.add_hparams(
-            hparam_dict=self.hparams_dict,
+            hparam_dict=hyperparams.get_val_dict(),
             metric_dict={self.best_metric_name: self.best_metric_val}
         )
 
