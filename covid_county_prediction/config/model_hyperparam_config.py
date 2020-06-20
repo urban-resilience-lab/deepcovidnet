@@ -1,40 +1,36 @@
-from covid_county_prediction.config.base_config import Config
+from covid_county_prediction.Hyperparameters import HPLevel, HyperparametersSingleton
 import sys
 
-config = Config('Hyperparameters for DNN model')
 
-config.epochs                       = 100
+def add_hyperparameters(hps):
+    with hps(level=HPLevel.HIGH):
+        hps.add(name='lr', val=4.46265919891661e-5, hp_range=[0.00001, 1], log_scale=True)
+        hps.add(name='momentum', val=0.9, hp_range=[0.01, 1])
+        hps.add(name='weight_decay', val=0.0001694801, hp_range=[0.00001, 0.01], log_scale=True)
+        hps.add(name='batch_size', val=203, hp_range=[16, 512], hp_type=int)
+        hps.add(name='embedding_size', val=1789, hp_range=[64, 2048], hp_type=int)
+        hps.add(name='higher_order_features_size', val=1346, hp_range=[64, 2048], hp_type=int)
 
-# optimizer parameters
-config.lr                           = 0.0005
-config.momentum                     = 0.9
-config.weight_decay                 = 4e-4
-config.min_learning_rate            = 0.000001
-config.lr_decay_step_size           = 10
-config.lr_decay_factor              = 0.9
+    with hps(level=HPLevel.MEDIUM):
+        hps.add(name='lr_decay_factor', val=0.9, hp_range=[0.01, 1])
+        hps.add(name='ce_coeff', val=1, hp_range=[0, 100])
 
-# other params
-config.batch_size                   = 64
-config.embedding_size               = 512
-config.higher_order_features_size   = 512
-config.projection_days              = 7
-config.past_days_to_consider        = 13
+    with hps(level=HPLevel.LOW):
+        hps.add(name='epochs', val=40, hp_range=[10, 100], hp_type=int)
+        hps.add(name='min_learning_rate', val=0.000001, hp_range=[0, 0.01])
+        hps.add(name='lr_decay_step_size', val=10, hp_range=[1, 20], hp_type=int)
+        hps.add(name='early_stopping_num', val=5, hp_range=[3, 20], hp_type=int)
 
-assert config.past_days_to_consider == 13, 'need to recache upon change'
-assert config.projection_days == 7, 'need to recache upon change'
+    with hps(level=HPLevel.NONE):
+        hps.add(
+            name='projection_days', val=7, hp_range=[1, 14], hp_type=int,
+            check=(lambda x: x == 7)
+        )
 
-assert (config.past_days_to_consider + 1) % 7 == 0, 'to ensure features will be combinable'
-
-def get_hparams_dict():
-    hyperparams = config.__dict__.copy()
-    for k in Config.static_members:
-        if k in hyperparams:
-            hyperparams.pop(k)
-    hyperparams.pop('description')
-    hyperparams.pop('get_hparams_dict')
-    return hyperparams
+        hps.add(
+            name='past_days_to_consider', val=13, hp_range=[13, 13],
+            hp_type=int, check=(lambda x: x == 13 and (x + 1) % 7 == 0)
+        )
 
 
-config.get_hparams_dict = get_hparams_dict
-
-sys.modules[__name__] = config
+sys.modules[__name__] = HyperparametersSingleton(add_hyperparameters)

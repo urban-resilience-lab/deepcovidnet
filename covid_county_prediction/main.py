@@ -5,6 +5,7 @@ from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
+from covid_county_prediction.CovidExperiment import CovidExperiment
 import argparse
 from torch.utils.data import DataLoader
 import logging
@@ -93,20 +94,23 @@ def get_runner(runner_type):
         return OrdinalCovidRunner
 
 
-def main():
-    logging.getLogger().setLevel(logging.INFO)
-
-    parser = argparse.ArgumentParser()
-
+def add_args(parser):
     parser.add_argument('--exp', required=True)
     parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal'])
-    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save'])
+    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save', 'tune'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
     parser.add_argument('--start-date', default=str(global_config.data_start_date))
     parser.add_argument('--end-date', default=str(global_config.data_end_date))
     parser.add_argument('--save-func', default='save_weather_data')
     parser.add_argument('--load-path', default='')
+
+
+def main():
+    logging.getLogger().setLevel(logging.INFO)
+
+    parser = argparse.ArgumentParser()
+    add_args(parser)
     args = parser.parse_args()
 
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
@@ -121,7 +125,7 @@ def main():
 
         runner = get_runner(args.runner)(args.exp, load_path=args.load_path, sample_batch=b)
 
-        runner.train(train_loader, hyperparams.epochs, val_loader=val_loader)
+        runner.train(train_loader, val_loader=val_loader)
 
     elif args.mode == 'test' or args.mode == 'val':
         assert args.load_path, 'model path not specified'
@@ -153,6 +157,22 @@ def main():
 
         d = DataSaver()
         getattr(d, args.save_func)(start_date, end_date)
+
+    elif args.mode == 'tune':
+        train_dataset, val_dataset, _ = get_train_val_test_datasets('train')
+        exp = CovidExperiment(
+                args.exp,
+                get_runner(args.runner),
+                train_dataset=train_dataset,
+                val_dataset=val_dataset,
+                exp_name=args.exp
+            )
+
+        best_params, best_vals, _, _ = hyperparams.tune(exp)
+        import pickle
+        pickle.dump(
+            (best_params, best_vals), open(global_config.best_tune_file, 'wb')
+        )
 
 
 if __name__ == '__main__':

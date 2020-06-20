@@ -19,4 +19,6 @@ config.data_end_date = date(2020, 6, 7)
 config.train_end_date   = date(2020, 5, 15)
 config.val_end_date     = date(2020, 5, 24)
 
+config.best_tune_file = os.path.join(config.data_save_dir, 'tune_results.pickle')
+
 sys.modules[__name__] = config
