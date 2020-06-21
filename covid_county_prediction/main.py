@@ -169,9 +169,11 @@ def main():
             )
 
         best_params, best_vals, _, _ = hyperparams.tune(exp)
+
         import pickle
         pickle.dump(
-            (best_params, best_vals), open(global_config.best_tune_file, 'wb')
+            (best_params, best_vals),
+            open(global_config.get_best_tune_file(args.exp), 'wb')
         )
 
 
