@@ -67,6 +67,14 @@ class DataLoader(DataSaver):
         )
 
     @timed_logger_decorator
+    def load_dilation_index(self, start_date, end_date):
+        return self._load_time_dep_features(
+            start_date, end_date, saver_config.dilation_index.get_file_func(),
+            self.save_dilation_index, TimeDependentFeatures, 'di',
+            feature_saver=saver_config.dilation_index
+        )
+
+    @timed_logger_decorator
     def load_countywise_cumulative_cases(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date,

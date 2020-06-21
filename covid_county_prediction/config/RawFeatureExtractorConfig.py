@@ -123,6 +123,12 @@ config.labels_csv_path = 'https://raw.githubusercontent.com/nytimes/covid-19-dat
 config.weather_token = 'WfaiwuFYdVwalQeqsdKwhVBHVbfoLGHA'
 config.weather_attributes = ['TMIN', 'TMAX']
 
+# dilation index
+config.di_csv_path = os.path.join(
+                        global_config.data_base_dir,
+                        'All_DI_All_County.csv'
+                    )
+
 # reader configs
 config.sg_social_distancing_reader = ReaderConfig(
                                     file_granularity='daily',

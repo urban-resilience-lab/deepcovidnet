@@ -364,6 +364,24 @@ class RawFeatureExtractor():
             feature_saver=saver_config.num_cases
         )
 
+    def read_dilation_index(self, start_date, end_date):
+        df = pd.read_csv(
+            config.di_csv_path, usecols=['FIPS', 'Date', 'DI'],
+            dtype={'FIPS': str}
+        )
+        d = start_date
+        output_dfs = []
+        while d < end_date:
+            output_dfs.append(
+                df[df['Date'] == str(d)].set_index('FIPS').drop(columns=['Date'])
+            )
+            d += timedelta(1)
+
+        return TimeDependentFeatures(
+                output_dfs, 'di', start_date, timedelta(days=1),
+                feature_saver=saver_config.dilation_index
+            )
+
     def read_countywise_cumulative_cases(self, start_date, end_date):
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'

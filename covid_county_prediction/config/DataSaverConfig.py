@@ -53,16 +53,13 @@ config.sg_social_distancing = FeatureSaver(
                             )
 
 # weather data
-config.weather = FeatureSaver(
-                        root='weather_data',
-                        keyword='weather'
-                )
+config.weather = FeatureSaver(root='weather_data', keyword='weather')
 
 # num cases data
-config.num_cases = FeatureSaver(
-                        root='num_cases',
-                        keyword='num-cases'
-                    )
+config.num_cases = FeatureSaver(root='num_cases', keyword='num-cases')
+
+# dilation index
+config.dilation_index = FeatureSaver(root='dilation_index', keyword='di')
 
 # countywise cumulative cases data
 config.countywise_cumulative_cases = FeatureSaver(
@@ -71,10 +68,7 @@ config.countywise_cumulative_cases = FeatureSaver(
                                     )
 
 # sg mobility data
-config.sg_mobility = FeatureSaver(
-                        root='sg_mobility',
-                        keyword='mobility'
-                    )
+config.sg_mobility = FeatureSaver(root='sg_mobility', keyword='mobility')
 
 
 sys.modules[__name__] = config

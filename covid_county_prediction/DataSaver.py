@@ -54,6 +54,15 @@ class DataSaver(RawFeatureExtractor):
             overwrite
         )
 
+    def save_dilation_index(self, start_date, end_date, overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_dilation_index,
+            config.dilation_index,
+            overwrite
+        )
+
     def save_countywise_cumulative_cases(self, start_date, end_date,
                                          overwrite=False):
         self._save_time_dep_features(
