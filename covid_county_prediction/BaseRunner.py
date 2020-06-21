@@ -54,15 +54,12 @@ class BaseRunner(metaclass=ABCMeta):
 
     def load_model(self, model, path):
         d = torch.load(path)
-        try:
-            model.load_state_dict(d['state_dict'])
-            logging.info('Loading ' + d['arch'] + ' where ' + \
-                d['best_metric_name'] + ' was ' + \
-                str(d['best_metric_val']) + '...')
-            if(d['best_metric_name'] == self.best_metric_name):
-                self.best_metric_val = d['best_metric_val']
-        except:
-            warnings.warn('Could not load ' + d['arch'] + '! This happens when the architecture of the saved model is different than the current model')
+        model.load_state_dict(d['state_dict'])
+        logging.info('Loading ' + d['arch'] + ' where ' + \
+            d['best_metric_name'] + ' was ' + \
+            str(d['best_metric_val']) + '...')
+        if(d['best_metric_name'] == self.best_metric_name):
+            self.best_metric_val = d['best_metric_val']
 
     def output_weight_distribution(self, name_prefix="training_weights"):
         for net in self.nets:
@@ -183,7 +180,7 @@ class BaseRunner(metaclass=ABCMeta):
                 else:
                     bad_epochs += 1
                     if bad_epochs >= hyperparams.early_stopping_num:
-                        return
+                        break
 
             elif epoch % config.save_freq == 0:
                 self.save_nets(epoch)
