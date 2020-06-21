@@ -13,14 +13,16 @@ class DeepFM(nn.Module):
         self.num_features = dataset_config.num_features
 
         self.deep_processor = nn.Sequential(
-                nn.Linear(self.num_features * self.feature_dim, 1024),
-                nn.ReLU(),
-                nn.BatchNorm1d(1024),
-                nn.Linear(1024, 512),
-                nn.ReLU(),
-                nn.BatchNorm1d(512),
-                nn.Linear(512, hyperparams.higher_order_features_size)
-            )
+            nn.Linear(self.num_features * self.feature_dim, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, 1024),
+            nn.ReLU(),
+            nn.AlphaDropout(hyperparams.dropout_prob),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.AlphaDropout(hyperparams.dropout_prob),
+            nn.Linear(512, hyperparams.higher_order_features_size)
+        )
 
         self.classifier = nn.Sequential(
             nn.Linear(
