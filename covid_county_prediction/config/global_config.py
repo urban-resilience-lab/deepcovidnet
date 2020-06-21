@@ -2,7 +2,7 @@ from covid_county_prediction.config.base_config import Config
 import sys
 import os
 from pathlib import Path
-from datetime import date, timedelta
+from datetime import date, datetime
 
 
 config = Config('Global config parameters')
@@ -19,6 +19,16 @@ config.data_end_date = date(2020, 6, 7)
 config.train_end_date   = date(2020, 5, 15)
 config.val_end_date     = date(2020, 5, 24)
 
-config.best_tune_file = os.path.join(config.data_save_dir, 'tune_results.pickle')
+
+def get_best_tune_file(exp_name):
+    now = datetime.now()
+    fl = f'{now.year}-{now.month}-{now.day}_{now.hour}-{now.minute}_{exp_name}.pickle'
+    dr = os.path.join(config.data_save_dir, 'tunes')
+    if not os.path.exists(dr):
+        os.mkdir(dr)
+    return os.path.join(dr, fl)
+
+
+config.get_best_tune_file = get_best_tune_file
 
 sys.modules[__name__] = config
