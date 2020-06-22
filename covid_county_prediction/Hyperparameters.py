@@ -1,7 +1,6 @@
 from enum import IntEnum
 import logging
 import covid_county_prediction.config.HyperparametersConfig as config
-from ax.service.managed_loop import optimize
 
 
 class HPLevel(IntEnum):
@@ -90,6 +89,7 @@ class HyperparametersSingleton(object):
             logging.warning(f'Ignoring attempt to add {name} again')
 
     def tune(self, exp, level=HPLevel.MEDIUM):
+        from ax.service.managed_loop import optimize
         parameters = []
         for k in self.__hps:
             if self.__hps[k].level >= level:
