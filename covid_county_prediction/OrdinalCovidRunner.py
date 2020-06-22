@@ -70,7 +70,11 @@ class CustomLoss(nn.Module):
 
         loss = bce + ce
 
-        self.last_losses = [bce.item() / loss.item(), ce.item() / loss.item()]
+        eps = 0.0000001
+        if loss.item() > eps:
+            self.last_losses = [bce.item() / loss.item(), ce.item() / loss.item()]
+        else:
+            self.last_losses = [bce.item() / (loss.item() + eps), ce.item() / (loss.item() + eps)]
 
         return loss
 
