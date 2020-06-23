@@ -56,9 +56,13 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                     self.combined_features[feature_index].get_index(common_date)
 
                 df = self.combined_features[feature_index].raw_features[date_index]
+
+                assert df.shape[1] == 1
+
                 cur_type = self.combined_features[feature_index].type
 
                 if cur_type == config.cross_type:
+                    assert (df.columns == features_config.county_info.index).all()
                     features = \
                         df.values[features_config.county_to_iloc[county_fips]]
                 elif cur_type == config.const_type:
