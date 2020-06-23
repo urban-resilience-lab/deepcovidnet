@@ -19,6 +19,11 @@ def get_county_info(county_info_link):
     df = pd.read_html(county_info_link)[0].iloc[:-1].set_index('FIPS')
     duplicates = df.loc[df.index.duplicated()].index
     df = df.drop(duplicates)
+    df = df.drop(df.index[df.index.str.startswith('7')])
+
+    if not os.path.exists(config.counties_save_path):
+        df.to_csv(config.counties_save_path)
+
     return df
 
 
