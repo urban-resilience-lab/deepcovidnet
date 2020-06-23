@@ -29,8 +29,8 @@ def add_hyperparameters(hps):
         )
 
         hps.add(
-            name='past_days_to_consider', val=27, hp_range=[27, 27],
-            hp_type=int, check=(lambda x: x == 27 and (x + 1) % 7 == 0)
+            name='past_days_to_consider', val=13, hp_range=[13, 13],
+            hp_type=int, check=(lambda x: x == 13 and (x + 1) % 7 == 0)
         )
 
 
