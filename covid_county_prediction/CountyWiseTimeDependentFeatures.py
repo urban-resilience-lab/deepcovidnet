@@ -80,3 +80,6 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
             max(self.max_interval, other.interval)
 
         self.combined_features.append(other)
+
+    def get_feature_name(self, idx):
+        return self.combined_features[idx].feature_name

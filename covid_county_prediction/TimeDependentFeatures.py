@@ -60,3 +60,6 @@ class TimeDependentFeatures(RawFeatures):
             self.raw_features[i] = ((self.raw_features[i] - mean) / std).fillna(0)
 
         return mean, std
+
+    def get_feature_name(self, idx):
+        return self.feature_name + '__' + self.raw_features[0].columns[idx]

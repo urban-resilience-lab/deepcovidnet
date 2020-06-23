@@ -32,3 +32,6 @@ class ConstantFeatures(RawFeatures):
             self.raw_features = self.raw_features.fillna(0)
 
         return mean, std
+
+    def get_feature_name(self, idx):
+        return self.feature_name + '__' + self.raw_features.columns[idx]

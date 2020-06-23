@@ -46,3 +46,6 @@ class RawFeatures(ABC):
     def extract_torch_tensor(self, county_fips: str, start_date: date,
                              end_date: date):
         raise NotImplementedError()
+
+    def get_feature_name(self, idx):
+        raise NotImplementedError()

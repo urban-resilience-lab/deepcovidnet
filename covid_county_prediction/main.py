@@ -6,13 +6,15 @@ from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 from covid_county_prediction.CovidExperiment import CovidExperiment
+from covid_county_prediction.FeatureAnalyzer import FeatureAnalyzer
 import argparse
 from torch.utils.data import DataLoader
 import logging
 from datetime import datetime
+import pickle
 
 
-def get_train_val_test_datasets(mode, use_cache=True):
+def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
     assert mode in ['all', 'train', 'test']
 
     train_start = global_config.data_start_date
@@ -29,14 +31,16 @@ def get_train_val_test_datasets(mode, use_cache=True):
             train_start,
             val_start,
             means_stds=None,
-            use_cache=use_cache
+            use_cache=use_cache,
+            load_features=load_features
         )
 
         val_dataset = CovidCountyDataset(
             val_start,
             test_start,
             means_stds=train_dataset.means_stds,
-            use_cache=use_cache
+            use_cache=use_cache,
+            load_features=load_features
         )
 
     if mode in ['all', 'test']:
@@ -50,16 +54,17 @@ def get_train_val_test_datasets(mode, use_cache=True):
             test_start,
             end_date,
             means_stds=means_stds,
-            use_cache=use_cache
+            use_cache=use_cache,
+            load_features=load_features
         )
 
     return train_dataset, val_dataset, test_dataset
 
 
-def get_train_val_test_loaders(mode):
+def get_train_val_test_loaders(mode, load_features=False):
     assert mode in ['all', 'train', 'test']
 
-    train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(mode)
+    train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(mode, load_features=load_features)
     train_loader = None
     val_loader = None
     test_loader = None
@@ -97,7 +102,7 @@ def get_runner(runner_type):
 def add_args(parser):
     parser.add_argument('--exp', required=True)
     parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal'])
-    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save', 'tune'])
+    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save', 'tune', 'rank'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
     parser.add_argument('--start-date', default=str(global_config.data_start_date))
@@ -170,11 +175,38 @@ def main():
 
         best_params, best_vals, _, _ = hyperparams.tune(exp)
 
-        import pickle
         pickle.dump(
             (best_params, best_vals),
             open(global_config.get_best_tune_file(args.exp), 'wb')
         )
+
+    elif args.mode == 'rank':
+        assert args.load_path, 'model path not specified'
+
+        val_loader = get_train_val_test_loaders('train', load_features=True)[1]
+
+        for b in val_loader:
+            b.pop(dataset_config.labels_key)
+            break
+
+        analyzer = FeatureAnalyzer(
+            runner=get_runner(args.runner)(args.exp, load_path=args.load_path, sample_batch=b),
+            val_loader=val_loader
+        )
+
+        results = analyzer.get_ranked_features()
+
+        print('Feature Analysis Results')
+        print('=' * 80)
+        print('=' * 80)
+        print('=' * 80)
+        print('\n' * 3)
+        print(results)
+        print('\n' * 3)
+        print('=' * 80)
+        print('=' * 80)
+        print('=' * 80)
+        print('\n' * 3)
 
 
 if __name__ == '__main__':

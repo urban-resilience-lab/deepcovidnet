@@ -16,7 +16,7 @@ from math import ceil, floor
 
 class CovidCountyDataset(DataLoader, Dataset):
     def __init__(self, data_start_date, data_end_date, means_stds,
-                 use_cache=True):
+                 use_cache=True, load_features=False):
         super(CovidCountyDataset, self).__init__()
 
         self.start_date = data_start_date
@@ -28,6 +28,43 @@ class CovidCountyDataset(DataLoader, Dataset):
         self.cache = {}
 
         self._load_cache_from_disk()
+
+        if load_features or (not use_cache):
+            training_data_end_date = \
+                self.end_date - timedelta(hyperparams.projection_days)
+
+            training_data_start_date = \
+                self.start_date - timedelta(hyperparams.projection_days) -\
+                timedelta(hyperparams.past_days_to_consider)
+
+            features = [
+                self.load_census_data(),
+                self.load_sg_patterns_monthly(training_data_start_date, training_data_end_date),
+                # self.read_weather_data(training_data_start_date, training_data_end_date),
+                self.load_sg_social_distancing(training_data_start_date, training_data_end_date),
+                self.load_num_cases(training_data_start_date, training_data_end_date),
+                self.load_dilation_index(training_data_start_date, training_data_end_date),
+                self.load_sg_mobility_incoming(training_data_start_date, training_data_end_date),
+                self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
+            ]
+
+            if means_stds is None:
+                means_stds = [(None, None)] * len(features)
+
+            assert len(means_stds) == len(features)
+
+            self.means_stds = []
+
+            for i in range(len(features)):
+                self.means_stds.append(
+                    features[i].normalize(
+                        mean=means_stds[i][0], std=means_stds[i][1]
+                    )
+                )
+
+            self.features = FeaturesList(features)
+
+            assert len(self.features) == config.num_features
 
         if self.is_cached:
             return
@@ -60,42 +97,6 @@ class CovidCountyDataset(DataLoader, Dataset):
                 else:
                     self.labels_lens.append(cur_labels.shape[0])
             d += timedelta(days=1)
-
-        training_data_end_date = \
-            self.end_date - timedelta(hyperparams.projection_days)
-
-        training_data_start_date = \
-            self.start_date - timedelta(hyperparams.projection_days) -\
-            timedelta(hyperparams.past_days_to_consider)
-
-        features = [
-            self.load_census_data(),
-            self.load_sg_patterns_monthly(training_data_start_date, training_data_end_date),
-            # self.read_weather_data(training_data_start_date, training_data_end_date),
-            self.load_sg_social_distancing(training_data_start_date, training_data_end_date),
-            self.load_num_cases(training_data_start_date, training_data_end_date),
-            self.load_dilation_index(training_data_start_date, training_data_end_date),
-            self.load_sg_mobility_incoming(training_data_start_date, training_data_end_date),
-            self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
-        ]
-
-        if means_stds is None:
-            means_stds = [(None, None)] * len(features)
-
-        assert len(means_stds) == len(features)
-
-        self.means_stds = []
-
-        for i in range(len(features)):
-            self.means_stds.append(
-                features[i].normalize(
-                    mean=means_stds[i][0], std=means_stds[i][1]
-                )
-            )
-
-        self.features = FeaturesList(features)
-
-        assert len(self.features) == config.num_features
 
     def __len__(self):
         if self.is_cached:
