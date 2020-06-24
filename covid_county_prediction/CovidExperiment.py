@@ -21,7 +21,6 @@ class CovidExperiment():
     def train(self, **train_args):
         self.runner_args['exp_name'] = f'{self.name}_{self.run_num}'
         runner = self.runner_cls(**self.runner_args)
-        print(hyperparams.lr, hyperparams.batch_size)
 
         train_loader = DataLoader(
                             self.train_dataset,
