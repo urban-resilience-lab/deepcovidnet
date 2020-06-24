@@ -5,7 +5,6 @@ import covid_county_prediction.config.CountyWiseTimeDependentFeaturesConfig as\
 import covid_county_prediction.config.features_config as features_config
 import numpy as np
 import torch
-import logging
 
 
 class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
@@ -57,8 +56,6 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
 
                 df = self.combined_features[feature_index].raw_features[date_index]
 
-                assert df.shape[1] == 1
-
                 cur_type = self.combined_features[feature_index].type
 
                 if cur_type == config.cross_type:
@@ -66,6 +63,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                     features = \
                         df.values[features_config.county_to_iloc[county_fips]]
                 elif cur_type == config.const_type:
+                    assert df.shape[1] == 1
                     features = np.squeeze(df.to_numpy(), axis=1)
 
                 tensor[i, :, feature_index] = torch.tensor(features)
