@@ -7,8 +7,6 @@ from covid_county_prediction.ConstantFeatures import ConstantFeatures
 from covid_county_prediction.CountyWiseTimeDependentFeatures import CountyWiseTimeDependentFeatures
 from covid_county_prediction.TimeDependentFeatures import TimeDependentFeatures
 from datetime import timedelta
-import time
-import logging
 from covid_county_prediction.utils import timed_logger_decorator
 
 
