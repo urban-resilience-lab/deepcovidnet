@@ -80,29 +80,39 @@ class CustomLoss(nn.Module):
 
 
 class OrdinalCovidRunner(CovidRunner):
-    def __init__(self, exp_name, load_path=None, sample_batch=None):
-        net = CovidModule(output_neurons=dataset_config.num_classifiers)
+    def __init__(
+        self, exp_name, net=None, loss_fn=None, load_path=None,
+        sample_batch=None
+    ):
+        if net is None:
+            net = CovidModule(output_neurons=dataset_config.num_classifiers)
+
+        if loss_fn is None:
+            loss_fn = CustomLoss()
 
         super(OrdinalCovidRunner, self).__init__(
             exp_name=exp_name,
             net=net,
-            loss_fn=CustomLoss(),
+            loss_fn=loss_fn,
             load_path=load_path,
             sample_batch=sample_batch
         )
 
     def _get_extra_metrics(self, pred, labels):
-        ordinal_labels = get_ordinal_labels(labels)
-        classifier_acc = \
-            (pred.sigmoid().round().flatten() == ordinal_labels.flatten()).sum().item() / pred.numel()
-
         metrics = [
-            ('classifier_acc', classifier_acc),
+            ('classifier_acc', self.get_classifier_acc(pred, labels)),
             ('bce_contrib', self.loss_fn.last_losses[0]),
             ('ce_contrib', self.loss_fn.last_losses[1])
         ]
 
         return metrics
+
+    def get_classifier_acc(self, pred, labels):
+        ordinal_labels = get_ordinal_labels(labels).flatten()
+        flat_class_pred = pred.sigmoid().round().flatten()
+        return \
+            (flat_class_pred == ordinal_labels).sum().item() \
+            / flat_class_pred.numel()
 
     def get_class_pred(self, pred):
         class_prob = get_class_prob(pred)
