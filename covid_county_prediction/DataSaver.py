@@ -63,6 +63,15 @@ class DataSaver(RawFeatureExtractor):
             overwrite
         )
 
+    def save_reproduction_number(self, start_date, end_date, overwrite=False):
+        self._save_time_dep_features(
+            start_date,
+            end_date,
+            self.read_reproduction_number,
+            config.reproduction_number,
+            overwrite
+        )
+
     def save_countywise_cumulative_cases(self, start_date, end_date,
                                          overwrite=False):
         self._save_time_dep_features(

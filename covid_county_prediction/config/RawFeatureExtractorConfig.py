@@ -112,6 +112,13 @@ config.sg_open_census_metadata_path = os.path.join(global_config.data_base_dir, 
 config.svi_df_path = os.path.join(global_config.data_base_dir, "SVI2018.csv")  # downloaded from https://data.cdc.gov/Health-Statistics/Social-Vulnerability-Index-2018-United-States-coun/48va-t53r
 config.ccvi_csv_path = os.path.join(global_config.data_base_dir, "CCVI.csv")  # downloaded from https://docs.google.com/spreadsheets/d/1qEPuziEpxj-VG11IAZoa5RWEr4GhNoxMn7aBdU76O5k/edit#gid=549685106
 
+whitelisted_types = ['b', 'c']
+whitelisted_subjects = [1, 2, 3, 8, 11, 14, 16, 17, 19, 23, 24]
+
+config.census_cols_whitelist = [
+    typ + str(subj).zfill(2) for typ in whitelisted_types for subj in whitelisted_subjects
+]
+
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')
 config.poi_info_pickle_path = os.path.join(global_config.data_save_dir, 'poi_info.pickle')
@@ -127,6 +134,13 @@ config.weather_attributes = ['TMIN', 'TMAX']
 config.di_csv_path = os.path.join(
                         global_config.data_base_dir,
                         'All_DI_All_County.csv'
+                    )
+
+# reproduction index
+config.ri_csv_path = os.path.join(
+                        global_config.data_base_dir,
+                        'reproduction_index',
+                        'r0.csv'
                     )
 
 # reader configs

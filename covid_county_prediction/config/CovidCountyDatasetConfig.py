@@ -30,6 +30,6 @@ def get_cached_tensors_path(s, e):
 
 config.get_cached_tensors_path = get_cached_tensors_path
 
-config.num_features = 6
+config.num_features = 7
 
 sys.modules[__name__] = config

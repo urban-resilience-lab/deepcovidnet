@@ -382,6 +382,30 @@ class RawFeatureExtractor():
                 feature_saver=saver_config.dilation_index
             )
 
+    def read_reproduction_number(self, start_date, end_date):
+        df = pd.read_csv(config.ri_csv_path, dtype={'fips': str})
+        df = df.drop(columns=['state', 'county']).set_index('fips').sort_index()
+
+        output_dfs = []
+
+        d = start_date
+        while d < end_date:
+            if str(d) in df.columns:
+                output_dfs.append(
+                    df[str(d)].to_frame().rename(columns={str(d): 'rn'}).fillna(0)
+                )
+            else:
+                output_dfs.append(
+                    pd.DataFrame(index=df.index, columns=['rn']).fillna(0)
+                )
+            d += timedelta(1)
+
+        return TimeDependentFeatures(
+                output_dfs, 'reproduction_index',
+                start_date, timedelta(days=1),
+                feature_saver=saver_config.reproduction_number
+            )
+
     def read_countywise_cumulative_cases(self, start_date, end_date):
         df = pd.read_csv(config.labels_csv_path, usecols=[
             'date', 'fips', 'cases'

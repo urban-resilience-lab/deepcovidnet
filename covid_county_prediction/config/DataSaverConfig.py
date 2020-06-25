@@ -61,6 +61,12 @@ config.num_cases = FeatureSaver(root='num_cases', keyword='num-cases')
 # dilation index
 config.dilation_index = FeatureSaver(root='dilation_index', keyword='di')
 
+# reproduction number
+config.reproduction_number = FeatureSaver(
+                                root='reproduction_number',
+                                keyword='rn'
+                            )
+
 # countywise cumulative cases data
 config.countywise_cumulative_cases = FeatureSaver(
                                         root='countywise_cum_cases',

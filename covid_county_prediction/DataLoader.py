@@ -73,6 +73,14 @@ class DataLoader(DataSaver):
         )
 
     @timed_logger_decorator
+    def load_reproduction_number(self, start_date, end_date):
+        return self._load_time_dep_features(
+            start_date, end_date, saver_config.reproduction_number.get_file_func(),
+            self.save_reproduction_number, TimeDependentFeatures, 'rn',
+            feature_saver=saver_config.reproduction_number
+        )
+
+    @timed_logger_decorator
     def load_countywise_cumulative_cases(self, start_date, end_date):
         return self._load_time_dep_features(
             start_date, end_date,

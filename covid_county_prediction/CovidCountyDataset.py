@@ -44,6 +44,7 @@ class CovidCountyDataset(DataLoader, Dataset):
                 self.load_sg_social_distancing(training_data_start_date, training_data_end_date),
                 self.load_num_cases(training_data_start_date, training_data_end_date),
                 self.load_dilation_index(training_data_start_date, training_data_end_date),
+                self.load_reproduction_number(training_data_start_date, training_data_end_date),
                 self.load_sg_mobility_incoming(training_data_start_date, training_data_end_date),
                 self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
             ]
