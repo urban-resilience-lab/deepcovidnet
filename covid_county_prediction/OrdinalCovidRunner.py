@@ -105,7 +105,21 @@ class OrdinalCovidRunner(CovidRunner):
             ('ce_contrib', self.loss_fn.last_losses[1])
         ]
 
-        return metrics
+        return self.get_classifier_based_acc_and_error(pred, labels) + metrics
+
+    def get_classifier_based_acc_and_error(self, pred, labels):
+        ans = []
+        bin_pred = pred.sigmoid().round()
+        class_pred = bin_pred.sum(dim=1)
+        ans.append(('bin_acc', (class_pred == labels).sum().float() / class_pred.numel()))
+
+        err = 0
+        for i in range(bin_pred.shape[0]):
+            if not (bin_pred[i, :] == bin_pred[i, :].sort(descending=True)[0]).all():
+                err += 1
+        ans.append(('bin_err', err / bin_pred.shape[0]))
+
+        return ans
 
     def get_classifier_acc(self, pred, labels):
         ordinal_labels = get_ordinal_labels(labels).flatten()
