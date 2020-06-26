@@ -5,6 +5,7 @@ import os
 from datetime import timezone, date, timedelta
 from pandas.tseries import offsets
 import pandas as pd
+import pickle
 
 
 config = Config('Config for RawFeatureExtractor')
@@ -113,11 +114,20 @@ config.svi_df_path = os.path.join(global_config.data_base_dir, "SVI2018.csv")  #
 config.ccvi_csv_path = os.path.join(global_config.data_base_dir, "CCVI.csv")  # downloaded from https://docs.google.com/spreadsheets/d/1qEPuziEpxj-VG11IAZoa5RWEr4GhNoxMn7aBdU76O5k/edit#gid=549685106
 
 whitelisted_types = ['b', 'c']
-whitelisted_subjects = [1, 2, 3, 8, 11, 14, 16, 17, 19, 23, 24]
+whitelisted_subjects = [0, 1, 2, 3, 8, 11, 14, 16, 17, 19, 23, 24]
 
 config.census_cols_whitelist = [
-    typ + str(subj).zfill(2) for typ in whitelisted_types for subj in whitelisted_subjects
+    f'cbg_{typ}{str(subj).zfill(2)}' for typ in whitelisted_types for subj in whitelisted_subjects
 ]
+
+
+def get_aggregate_dict():
+    with open(os.path.join(global_config.data_save_dir, 'census_data_groupby_conditions.pickle'), 'rb') as f:  # data internally generated - contact for availability
+        d = pickle.load(f)
+    return d
+
+
+config.get_aggregate_dict = get_aggregate_dict
 
 # poi -> county
 config.place_county_cbg_file = os.path.join(global_config.data_base_dir, 'placeCountyCBG.csv')
@@ -134,14 +144,14 @@ config.weather_attributes = ['TMIN', 'TMAX']
 config.di_csv_path = os.path.join(
                         global_config.data_base_dir,
                         'All_DI_All_County.csv'
-                    )
+                    )  # data internally generated - contact for availability
 
 # reproduction index
 config.ri_csv_path = os.path.join(
                         global_config.data_base_dir,
                         'reproduction_index',
                         'r0.csv'
-                    )
+                    )  # data internally generated - contact for availability
 
 # reader configs
 config.sg_social_distancing_reader = ReaderConfig(

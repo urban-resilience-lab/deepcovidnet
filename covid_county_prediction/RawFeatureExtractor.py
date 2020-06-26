@@ -5,7 +5,7 @@ import re
 import os
 import string
 import requests
-from datetime import date, timedelta
+from datetime import timedelta
 import covid_county_prediction.config.features_config as features_config
 import covid_county_prediction.config.DataSaverConfig as saver_config
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
@@ -73,19 +73,6 @@ class RawFeatureExtractor():
         main_df = pd.DataFrame()
 
         logging.info('Read Census Data...')
-        for f in os.listdir(config.sg_open_census_data_path):
-            if f.startswith('cbg_b') or f.startswith('cbg_c'):
-                f = os.path.join(config.sg_open_census_data_path, f)
-                df = pd.read_csv(f, dtype={'census_block_group': str})
-                logging.info(f'Successfully read {f}')
-
-                df['census_block_group'] = \
-                    df['census_block_group'].apply(lambda x: x[:5])
-                df = df.groupby('census_block_group').sum()
-                main_df = main_df.merge(df, how='outer', left_index=True,
-                                        right_index=True, suffixes=('', ''))
-                logging.info('Merged into main dataframe')
-
         f = os.path.join(config.sg_open_census_metadata_path,
                          'cbg_field_descriptions.csv')
         meta_df = pd.read_csv(f, usecols=['table_id', 'field_full_name'])\
@@ -95,10 +82,29 @@ class RawFeatureExtractor():
         for idx in meta_df.index:
             cols_dict[idx] = meta_df.loc[idx]['field_full_name']
 
-        main_df = main_df.rename(columns=cols_dict)
+        aggregate_dict = config.get_aggregate_dict()
 
-        cols_to_remove = [c for c in main_df.columns if 'Margin of Error' in c]
-        main_df.drop(cols_to_remove, axis=1, inplace=True)
+        for f in sorted(os.listdir(config.sg_open_census_data_path)):
+            if f.startswith(tuple(config.census_cols_whitelist)):
+                f = os.path.join(config.sg_open_census_data_path, f)
+                df = pd.read_csv(f, dtype={'census_block_group': str})
+                logging.info(f'Successfully read {f}')
+
+                df = df.rename(columns={c: cols_dict[c] for c in df.columns if c in cols_dict})
+                df = df.iloc[:, np.arange(len(df.columns))[~df.columns.duplicated()]]
+
+                cols_to_remove = [c for c in df.columns if 'Margin of Error' in c]
+                df.drop(cols_to_remove, axis=1, inplace=True)
+
+                df['census_block_group'] = \
+                    df['census_block_group'].apply(lambda x: x[:5])
+                df = df.groupby('census_block_group').aggregate(
+                    {c: aggregate_dict[c] for c in df.columns if c in aggregate_dict}
+                )
+
+                main_df = main_df.merge(df, how='outer', left_index=True,
+                                        right_index=True, suffixes=('', ''))
+                logging.info('Merged into main dataframe')
 
         svi_df = pd.read_csv(
                     config.svi_df_path,
