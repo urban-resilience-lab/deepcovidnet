@@ -42,10 +42,10 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
 
         assert len(common_dates), 'Features not combinable due to no common dates'
 
-        # init tensor of shape (num_time_steps, num_counties, num_features)
+        # init tensor of shape (num_counties, num_time_steps, num_features)
         tensor = torch.zeros(
-            len(common_dates),
             self.raw_features[0].shape[0],
+            len(common_dates),
             len(self.combined_features)
         )
 
@@ -66,7 +66,7 @@ class CountyWiseTimeDependentFeatures(TimeDependentFeatures):
                     assert df.shape[1] == 1
                     features = np.squeeze(df.to_numpy(), axis=1)
 
-                tensor[i, :, feature_index] = torch.tensor(features)
+                tensor[:, i, feature_index] = torch.tensor(features)
 
         return tensor
 
