@@ -1,7 +1,8 @@
 from enum import IntEnum
 import logging
 import covid_county_prediction.config.HyperparametersConfig as config
-
+import pickle
+import torch
 
 class HPLevel(IntEnum):
     NONE = -1
@@ -111,6 +112,9 @@ class HyperparametersSingleton(object):
         )
 
     def __run(self, experiment, parameters):
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
+
         for k in parameters:
             assert k in self.__hps
             self.__hps[k].val = parameters[k]
@@ -124,3 +128,9 @@ class HyperparametersSingleton(object):
         for k in self.__hps:
             d[k] = self.__hps[k].val
         return d
+
+    def load(self, pickle_file):
+        with open(pickle_file, 'rb') as f:
+            hps = pickle.load(f)[0]
+        for k in hps:
+            self.__hps[k].val = hps[k]
