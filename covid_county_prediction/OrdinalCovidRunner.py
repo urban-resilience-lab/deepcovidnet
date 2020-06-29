@@ -109,9 +109,9 @@ class OrdinalCovidRunner(CovidRunner):
 
     def get_classifier_based_acc_and_error(self, pred, labels):
         ans = []
-        bin_pred = pred.sigmoid().round()
+        bin_pred = self.get_bin_class_pred(pred)
         class_pred = bin_pred.sum(dim=1)
-        ans.append(('bin_acc', (class_pred == labels).sum().float() / class_pred.numel()))
+        ans.append(('bin_acc', ((class_pred == labels).sum().float() / class_pred.numel()).item()))
 
         err = 0
         for i in range(bin_pred.shape[0]):
@@ -123,10 +123,17 @@ class OrdinalCovidRunner(CovidRunner):
 
     def get_classifier_acc(self, pred, labels):
         ordinal_labels = get_ordinal_labels(labels).flatten()
-        flat_class_pred = pred.sigmoid().round().flatten()
+        flat_class_pred = self.get_bin_class_pred(pred).flatten()
         return \
             (flat_class_pred == ordinal_labels).sum().item() \
             / flat_class_pred.numel()
+
+    def get_bin_class_pred(self, pred):
+        prob = pred.sigmoid()
+        for i in range(prob.shape[1]):
+            thresh = nn.Threshold(getattr(hyperparams, f'bin_thresh_{i}'), 0)
+            prob[:, i] = thresh(prob[:, i]).ceil()
+        return prob.long()
 
     def get_class_pred(self, pred):
         class_prob = get_class_prob(pred)
