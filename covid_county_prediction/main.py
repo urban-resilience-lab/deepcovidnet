@@ -1,12 +1,15 @@
 import covid_county_prediction.config.global_config as global_config
+
 from covid_county_prediction.CovidRunner import CovidRunner
 from covid_county_prediction.OrdinalCovidRunner import OrdinalCovidRunner
+from covid_county_prediction.CoralRunner import CoralRunner
+
 from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 from covid_county_prediction.DataSaver import DataSaver
 import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 from covid_county_prediction.CovidExperiment import CovidExperiment
-from covid_county_prediction.FeatureAnalyzer import FeatureAnalyzer
+from covid_county_prediction.FeatureAnalyzer import FeatureAnalyzer, AnalysisType
 import argparse
 from torch.utils.data import DataLoader
 import logging
@@ -97,11 +100,22 @@ def get_runner(runner_type):
         return CovidRunner
     elif runner_type == 'ordinal':
         return OrdinalCovidRunner
+    elif runner_type == 'coral':
+        return CoralRunner
+
+
+def get_analysis_type(analysis_type):
+    if analysis_type == 'feature':
+        return AnalysisType.FEATURE
+    elif analysis_type == 'group':
+        return AnalysisType.GROUP
+    elif analysis_type == 'time':
+        return AnalysisType.TIME
 
 
 def add_args(parser):
     parser.add_argument('--exp', required=True)
-    parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal'])
+    parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal', 'coral'])
     parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save', 'tune', 'rank'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
@@ -109,6 +123,8 @@ def add_args(parser):
     parser.add_argument('--end-date', default=str(global_config.data_end_date))
     parser.add_argument('--save-func', default='save_weather_data')
     parser.add_argument('--load-path', default='')
+    parser.add_argument('--analysis-type', default='feature', choices=['feature', 'group', 'time'])
+    parser.add_argument('--load-hps', default='')
 
 
 def main():
@@ -120,6 +136,9 @@ def main():
 
     global_config.set_static_val('data_base_dir', args.data_dir, overwrite=True)
     global_config.set_static_val('data_save_dir', args.data_save_dir, overwrite=True)
+
+    if args.load_hps:
+        hyperparams.load(args.load_hps)
 
     if args.mode == 'train':
         train_loader, val_loader, _ = get_train_val_test_loaders(args.mode)
@@ -194,7 +213,9 @@ def main():
             val_loader=val_loader
         )
 
-        results = analyzer.get_ranked_features()
+        results = analyzer.get_ranked_features(
+                    get_analysis_type(args.analysis_type)
+                )
 
         print('Feature Analysis Results')
         print('=' * 80)
