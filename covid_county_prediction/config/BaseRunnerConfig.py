@@ -21,6 +21,7 @@ config.get_tensorboard_dir = \
                     )
 
 config.models_base_dir = os.path.join(Path(file_dir).parent.parent, 'models')
+config.min_save_acc = 0.725
 
 if not os.path.exists(config.models_base_dir):
     os.mkdir(config.models_base_dir)

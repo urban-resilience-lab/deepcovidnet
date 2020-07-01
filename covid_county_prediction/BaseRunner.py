@@ -174,7 +174,8 @@ class BaseRunner(metaclass=ABCMeta):
 
             if val_loader is not None or validate_on_train:
                 if(sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
-                    self.save_nets(epoch)
+                    if self.best_meter.avg >= config.min_save_acc:
+                        self.save_nets(epoch)
                     self.best_metric_val = self.best_meter.avg
                     bad_epochs = 0
                 else:
