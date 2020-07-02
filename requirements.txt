@@ -8,3 +8,7 @@ matplotlib
 tensorboard
 ax-platform
 tqdm
+plotly
+plotly-geo
+shapely
+pyshp
