@@ -4,6 +4,61 @@ import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import torch
 
 
+class BaseDeepProcessor(nn.Module):
+    def __init__(self, in_features, out_features):
+        super(BaseDeepProcessor, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+
+
+class TunableDeepProcessor(BaseDeepProcessor):
+    def __init__(
+        self, in_features, out_features,
+        intermediate_size=hyperparams.deep_intermediate_size,
+        num_layers=hyperparams.deep_layers
+    ):
+        super(TunableDeepProcessor, self).__init__(in_features, out_features)
+        self.intermediate_size = intermediate_size
+        self.num_layers = num_layers
+
+        self.net = []
+
+        for i in range(self.num_layers):
+            in_f, out_f = self.intermediate_size, self.intermediate_size
+            if i == 0:
+                in_f = self.in_features
+            if i == self.num_layers - 1:
+                out_f = self.out_features
+
+            self.net.append(nn.Linear(in_f, out_f))
+            if i != self.num_layers - 1:
+                self.net.append(nn.SELU())
+                self.net.append(nn.AlphaDropout(hyperparams.dropout_prob))
+
+        self.net = nn.Sequential(*self.net)
+
+    def forward(self, x):
+        return self.net(x)
+
+
+class FixedDeepProcessor(BaseDeepProcessor):
+    def __init__(self, in_features, out_features):
+        super(FixedDeepProcessor, self).__init__(in_features, out_features)
+        self.net = nn.Sequential(
+            nn.Linear(in_features, 2048),
+            nn.ReLU(),
+            nn.Linear(2048, 1024),
+            nn.ReLU(),
+            nn.AlphaDropout(hyperparams.dropout_prob),
+            nn.Linear(1024, 512),
+            nn.ReLU(),
+            nn.AlphaDropout(hyperparams.dropout_prob),
+            nn.Linear(512, out_features)
+        )
+
+    def forward(self, x):
+        return self.net(x)
+
 class DeepFM(nn.Module):
     def __init__(self, output_neurons):
         super(DeepFM, self).__init__()
@@ -12,17 +67,10 @@ class DeepFM(nn.Module):
         self.feature_dim = hyperparams.embedding_size
         self.num_features = dataset_config.num_features
 
-        self.deep_processor = nn.Sequential(
-            nn.Linear(self.num_features * self.feature_dim, 2048),
-            nn.ReLU(),
-            nn.Linear(2048, 1024),
-            nn.ReLU(),
-            nn.AlphaDropout(hyperparams.dropout_prob),
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-            nn.AlphaDropout(hyperparams.dropout_prob),
-            nn.Linear(512, hyperparams.higher_order_features_size)
-        )
+        self.deep_processor = TunableDeepProcessor(
+                                self.num_features * self.feature_dim,
+                                hyperparams.higher_order_features_size
+                            )
 
         self.classifier = nn.Sequential(
             nn.Linear(
