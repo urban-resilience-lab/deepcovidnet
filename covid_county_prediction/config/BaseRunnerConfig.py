@@ -6,7 +6,7 @@ from pathlib import Path
 
 config = Config('BaseRunnerConfig')
 
-config.print_freq               = 500
+config.print_freq               = 200
 config.intermittent_output_freq = 5 # Num batches between outputs
 config.save_freq                = 5
 
@@ -21,7 +21,7 @@ config.get_tensorboard_dir = \
                     )
 
 config.models_base_dir = os.path.join(Path(file_dir).parent.parent, 'models')
-config.min_save_acc = 0.725
+config.min_save_acc = 0.735
 
 if not os.path.exists(config.models_base_dir):
     os.mkdir(config.models_base_dir)
