@@ -52,7 +52,7 @@ class BaseRunner(metaclass=ABCMeta):
 
             loss_fn = loss_fn.cuda()
 
-    def load_model(self, model, path):
+    def load_model(self, model, path, load_hyperparams=True):
         d = torch.load(path)
         model.load_state_dict(d['state_dict'])
         logging.info('Loading ' + d['arch'] + ' where ' + \
@@ -60,6 +60,10 @@ class BaseRunner(metaclass=ABCMeta):
             str(d['best_metric_val']) + '...')
         if(d['best_metric_name'] == self.best_metric_name):
             self.best_metric_val = d['best_metric_val']
+
+        if load_hyperparams and 'hyperparams' in d:
+            hyperparams.load(d['hyperparams'])
+            logging.info(f'Loading hyperparams: {d["hyperparams"]}')
 
     def output_weight_distribution(self, name_prefix="training_weights"):
         for net in self.nets:
@@ -247,7 +251,8 @@ class BaseRunner(metaclass=ABCMeta):
                 'arch': self.nets[i].__class__.__name__ + '_' + self.exp_name,
                 'state_dict': self.nets[i].state_dict(),
                 'best_metric_val': self.best_meter.avg,
-                'best_metric_name': self.best_metric_name
+                'best_metric_name': self.best_metric_name,
+                'hyperparams': hyperparams.get_val_dict()
                 }, os.path.join(config.models_base_dir,
                     self.nets[i].__class__.__name__ + '_' + self.exp_name + '_' + \
                     'checkpoint_' + str(epoch + 1) + '.pth')
