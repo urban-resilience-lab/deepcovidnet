@@ -129,8 +129,13 @@ class HyperparametersSingleton(object):
             d[k] = self.__hps[k].val
         return d
 
-    def load(self, pickle_file):
-        with open(pickle_file, 'rb') as f:
-            hps = pickle.load(f)[0]
-        for k in hps:
-            self.__hps[k].val = hps[k]
+    def load(self, pickle_file_or_dict):
+        if isinstance(pickle_file_or_dict, str):
+            with open(pickle_file_or_dict, 'rb') as f:
+                hps = pickle.load(f)[0]
+            for k in hps:
+                self.__hps[k].val = hps[k]
+        elif isinstance(pickle_file_or_dict, dict):
+            for k in pickle_file_or_dict:
+                assert k in self.__hps
+                self.__hps[k].val = pickle_file_or_dict[k]
