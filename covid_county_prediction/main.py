@@ -180,7 +180,10 @@ def main():
         end_date    = datetime.strptime(args.end_date, '%Y-%m-%d').date()
 
         d = DataSaver()
-        getattr(d, args.save_func)(start_date, end_date)
+        try:
+            getattr(d, args.save_func)(start_date, end_date)
+        except TypeError:
+            getattr(d, args.save_func)()
 
     elif args.mode == 'tune':
         train_dataset, val_dataset, _ = get_train_val_test_datasets('train')
