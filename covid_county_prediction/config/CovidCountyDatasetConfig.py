@@ -9,8 +9,20 @@ from datetime import date
 config = Config('Config for CovidCountyDataset')
 
 config.labels_key = 'labels'
-config.labels_class_boundaries = [1, 12, 87]  # 0.32, 0.67, 0.9 - 4/5 - 6/7
+config.labels_class_boundaries = [1, 12, 87]  # 0.32, 0.67, 0.9: 4/5 - 6/7
 # [2, 11, 80]  # 0.33, 0.67, 0.9 percentiles 1/28 - 6/7
+
+config.label_to_str_range = {}
+config.label_to_range = {}
+
+for i in range(len(config.labels_class_boundaries) + 1):
+    low, high = 0, None
+    if i > 0:
+        low = config.labels_class_boundaries[i - 1] + 1
+    if i < len(config.labels_class_boundaries):
+        high = config.labels_class_boundaries[i]
+    config.label_to_str_range[i] = f'{low}{"+" if high is None else f"-{high}"}'
+    config.label_to_range[i] = (low, high)
 
 assert global_config.data_start_date == date(2020, 4, 5), 'change label_class_boundaries accordingly before use or explicitly comment this out'
 assert global_config.data_end_date == date(2020, 6, 7), 'change label_class_boundaries accordingly or explicitly comment this out'
