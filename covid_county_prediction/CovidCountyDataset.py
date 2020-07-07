@@ -12,6 +12,7 @@ from tqdm import tqdm
 import torch
 from covid_county_prediction.utils import timed_logger_decorator
 from math import ceil, floor
+import pickle
 
 
 class CovidCountyDataset(DataLoader, Dataset):
@@ -133,6 +134,9 @@ class CovidCountyDataset(DataLoader, Dataset):
         with open(save_path, 'wb') as f:
             torch.save(self.cache, f)
 
+    def save_means_stds(self, file):
+        pickle.dump(self.means_stds, open(file, 'wb'))
+
     def __getitem__(self, idx):
         if idx in self.cache:
             return self.cache[idx]
@@ -143,16 +147,56 @@ class CovidCountyDataset(DataLoader, Dataset):
 
         df_idx = idx - (labels_idx > 0) * self.labels_lens[labels_idx - 1]
 
+        out = self._get_tensors(labels_idx, df_idx)
+
+        if idx not in self.cache:
+            self.cache[idx] = out
+
+        return out
+
+    def _get_tensors(self, labels_idx, df_idx, discrete_labels=True):
         out = self.features.extract_torch_tensors(
                 county_fips=self.labels[labels_idx][2].iloc[df_idx].name,
                 start_date=self.labels[labels_idx][0],
                 end_date=self.labels[labels_idx][1]
             )
 
-        out[config.labels_key] = \
-            self._classify_label(self.labels[labels_idx][2].values[df_idx, 0])
+        if torch.cuda.is_available():
+            for k in out:
+                out[k] = out[k].cuda()
 
-        if idx not in self.cache:
-            self.cache[idx] = out
+        out[config.labels_key] = self.labels[labels_idx][2].values[df_idx, 0]
+        if discrete_labels:
+            out[config.labels_key] = self._classify_label(out[config.labels_key])
+
+        return out
+
+    def get_county_fips(self, idx):
+        labels_idx = bisect.bisect_left(self.labels_lens, idx)
+        df_idx = idx - (labels_idx > 0) * self.labels_lens[labels_idx - 1]
+        return self.labels[labels_idx][2].iloc[df_idx].name
+
+    def get_input_data_for(self, fips, discrete_labels=True):
+        assert fips in features_config.county_info.index
+
+        out = None
+        for labels_idx in range(len(self.labels)):
+            if fips in self.labels[labels_idx][2].index:
+                df_idx = self.labels[labels_idx][2].index.get_loc(fips)
+                if out is None:
+                    out = self._get_tensors(labels_idx, df_idx, discrete_labels)
+                    for k in out:
+                        if k != config.labels_key:
+                            out[k] = out[k].unsqueeze(0)
+                        else:
+                            out[k] = torch.tensor([int(out[k])])
+                else:
+                    temp = self._get_tensors(labels_idx, df_idx, discrete_labels)
+                    assert out.keys() == temp.keys()
+                    for k in out:
+                        if k != config.labels_key:
+                            out[k] = torch.cat([out[k], temp[k].unsqueeze(0)])
+                        else:
+                            out[k] = torch.cat([out[k], torch.tensor([int(temp[k])])])
 
         return out
