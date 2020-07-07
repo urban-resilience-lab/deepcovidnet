@@ -9,7 +9,7 @@ from datetime import date
 config = Config('Config for CovidCountyDataset')
 
 config.labels_key = 'labels'
-config.labels_class_boundaries = [1, 12, 87]  # 0.32, 0.67, 0.9: 4/5 - 6/7
+config.labels_class_boundaries = [1, 13, 93]  # 0.31, 0.67, 0.9: 4/5 - 6/29
 # [2, 11, 80]  # 0.33, 0.67, 0.9 percentiles 1/28 - 6/7
 
 config.label_to_str_range = {}
@@ -47,6 +47,6 @@ def get_cached_tensors_path(s, e):
 
 config.get_cached_tensors_path = get_cached_tensors_path
 
-config.num_features = 8
+config.num_features = 7
 
 sys.modules[__name__] = config
