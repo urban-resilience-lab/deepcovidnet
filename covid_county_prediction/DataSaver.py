@@ -12,11 +12,10 @@ class DataSaver(RawFeatureExtractor):
         super(DataSaver, self).__init__()
 
     def save_census_data(self, overwrite=False):
-        if not os.path.exists(config.census_data.root):
-            os.mkdir(config.census_data.root)
+        self._save_constant_features(config.census_data, self.read_census_data)
 
-        df = self.read_census_data().raw_features
-        self._save_df(config.census_data.save_file, df, overwrite)
+    def save_pop_dens_ccvi(self, overwrite=False):
+        self._save_constant_features(config.pop_dens_ccvi, self.read_pop_dens_ccvi)
 
     def save_sg_patterns_monthly(self, start_date, end_date, overwrite=False):
         self._save_time_dep_features(
@@ -90,6 +89,13 @@ class DataSaver(RawFeatureExtractor):
             config.sg_mobility,
             overwrite
         )
+
+    def _save_constant_features(self, feature_saver, read_func, overwrite=False):
+        if not os.path.exists(feature_saver.root):
+            os.mkdir(feature_saver.root)
+
+        df = read_func().raw_features
+        self._save_df(feature_saver.save_file, df, overwrite)
 
     def _save_time_dep_features(self, start_date, end_date, get_features,
                                 saver_config, overwrite):

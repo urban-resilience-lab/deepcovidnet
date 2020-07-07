@@ -16,17 +16,19 @@ class DataLoader(DataSaver):
 
     @timed_logger_decorator
     def load_census_data(self):
-        self._save_if_not_saved(
-            saver_config.census_data.save_file,
-            self.save_census_data
-        )
+        return self._load_constant_features(
+                saver_config.census_data,
+                self.save_census_data,
+                'open_census_data'
+            )
 
-        df = pd.read_csv(
-            saver_config.census_data.save_file, dtype={'fips': str}
-        ).set_index('fips')
-
-        return ConstantFeatures(df, 'open_census_data',
-                                feature_saver=saver_config.census_data)
+    @timed_logger_decorator
+    def load_pop_dens_ccvi(self):
+        return self._load_constant_features(
+                saver_config.pop_dens_ccvi,
+                self.save_pop_dens_ccvi,
+                'pop_dens_ccvi'
+            )
 
     @timed_logger_decorator
     def load_sg_patterns_monthly(self, start_date, end_date):
@@ -133,6 +135,19 @@ class DataLoader(DataSaver):
         else:
             return feature_type(dfs, feature_name, start_date, interval,
                                 cur_type=cur_type, feature_saver=feature_saver)
+
+    def _load_constant_features(self, feature_saver, save_func, feature_name):
+        self._save_if_not_saved(
+            feature_saver.save_file,
+            save_func
+        )
+
+        df = pd.read_csv(
+            feature_saver.save_file, dtype={'fips': str}
+        ).set_index('fips')
+
+        return ConstantFeatures(df, feature_name,
+                                feature_saver=feature_saver)
 
     def _save_if_not_saved(self, saved_path_or_get_path, saver,
                            start_date=None, end_date=None,

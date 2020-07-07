@@ -106,6 +106,10 @@ class RawFeatureExtractor():
                                         right_index=True, suffixes=('', ''))
                 logging.info('Merged into main dataframe')
 
+        return ConstantFeatures(main_df, 'open_census_data',
+                                feature_saver=saver_config.census_data)
+
+    def read_pop_dens_ccvi(self):
         svi_df = pd.read_csv(
                     config.svi_df_path,
                     usecols=['AREA_SQMI', 'E_TOTPOP', 'FIPS'],
@@ -116,11 +120,6 @@ class RawFeatureExtractor():
 
         svi_df = svi_df[['Population Density']]
 
-        main_df = main_df.merge(
-                    svi_df, how='outer', suffixes=('', ''),
-                    left_index=True, right_index=True
-                )
-
         ccvi_df = pd.read_csv(
                     config.ccvi_csv_path,
                     dtype={'FIPS (5-digit)': str}
@@ -130,13 +129,13 @@ class RawFeatureExtractor():
                     columns=['State', 'State Abbreviation', 'County']
                 )
 
-        main_df = main_df.merge(
+        main_df = svi_df.merge(
                     ccvi_df, how='outer', suffixes=('', ''),
                     left_index=True, right_index=True
                 )
 
-        return ConstantFeatures(main_df, 'open_census_data',
-                                feature_saver=saver_config.census_data)
+        return ConstantFeatures(main_df, 'pop_dens_ccvi',
+                                feature_saver=saver_config.pop_dens_ccvi)
 
     def read_sg_patterns_monthly(self, start_date, end_date):
         files = config.sg_patterns_monthly_reader.get_files_between(

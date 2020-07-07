@@ -40,6 +40,7 @@ class CovidCountyDataset(DataLoader, Dataset):
 
             features = [
                 self.load_census_data(),
+                self.load_pop_dens_ccvi(),
                 self.load_sg_patterns_monthly(training_data_start_date, training_data_end_date),
                 # self.read_weather_data(training_data_start_date, training_data_end_date),
                 self.load_sg_social_distancing(training_data_start_date, training_data_end_date),

@@ -40,6 +40,13 @@ config.census_data = FeatureSaver(
                         time_dependence=False
                     )
 
+# pop_dens_ccvi
+config.pop_dens_ccvi = FeatureSaver(
+                        root='pop_dens_ccvi',
+                        keyword='pop-dens-ccvi',
+                        time_dependence=False
+                    )
+
 # monthly data
 config.sg_patterns_monthly = FeatureSaver(
                                 root='monthly_patterns',
