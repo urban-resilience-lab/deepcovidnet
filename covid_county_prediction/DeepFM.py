@@ -32,8 +32,8 @@ class TunableDeepProcessor(BaseDeepProcessor):
 
             self.net.append(nn.Linear(in_f, out_f))
             if i != self.num_layers - 1:
-                self.net.append(nn.SELU())
-                self.net.append(nn.AlphaDropout(hyperparams.dropout_prob))
+                self.net.append(nn.ReLU())
+                self.net.append(nn.BatchNorm1d(out_f))
 
         self.net = nn.Sequential(*self.net)
 
@@ -45,19 +45,20 @@ class FixedDeepProcessor(BaseDeepProcessor):
     def __init__(self, in_features, out_features):
         super(FixedDeepProcessor, self).__init__(in_features, out_features)
         self.net = nn.Sequential(
-            nn.Linear(in_features, 2048),
+            nn.Linear(in_features, 512),
             nn.ReLU(),
-            nn.Linear(2048, 1024),
+            nn.Dropout(hyperparams.dropout_prob),
+            nn.BatchNorm1d(512),
+            nn.Linear(512, 256),
             nn.ReLU(),
-            nn.AlphaDropout(hyperparams.dropout_prob),
-            nn.Linear(1024, 512),
-            nn.ReLU(),
-            nn.AlphaDropout(hyperparams.dropout_prob),
-            nn.Linear(512, out_features)
+            nn.Dropout(hyperparams.dropout_prob),
+            nn.BatchNorm1d(256),
+            nn.Linear(256, out_features)
         )
 
     def forward(self, x):
         return self.net(x)
+
 
 class DeepFM(nn.Module):
     def __init__(self, output_neurons):
@@ -72,13 +73,12 @@ class DeepFM(nn.Module):
                                 hyperparams.higher_order_features_size
                             )
 
-        self.classifier = nn.Sequential(
-            nn.Linear(
-                hyperparams.higher_order_features_size +
-                int(self.num_features * (self.num_features - 1) / 2),
-                self.output_neurons
-            )
-        )
+        self.classifier = FixedDeepProcessor(
+                            hyperparams.higher_order_features_size +
+                            int(self.num_features * (self.num_features - 1) / 2) +
+                            self.num_features * self.feature_dim,
+                            self.output_neurons
+                        )
 
         self.second_order_interactions = None
 
@@ -116,5 +116,7 @@ class DeepFM(nn.Module):
         concatenated_features = torch.cat(concatenated_features, dim=1)
         higher_order_interactions = self.deep_processor(concatenated_features)
 
-        interactions = torch.cat([higher_order_interactions, self.second_order_interactions], dim=1)
-        return self.classifier(interactions)
+        classifier_in = [higher_order_interactions, self.second_order_interactions]
+        classifier_in += [features_dict[k] for k in sorted_keys]
+        classifier_in = torch.cat(classifier_in, dim=1)
+        return self.classifier(classifier_in)
