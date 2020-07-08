@@ -177,7 +177,7 @@ class BaseRunner(metaclass=ABCMeta):
                 self.test(val_loader, validate=True)
 
             if val_loader is not None or validate_on_train:
-                if(sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
+                if(self.best_meter.avg == self.best_metric_val or sign(self.best_meter.avg - self.best_metric_val) == self.best_compare):
                     if self.best_meter.avg >= config.min_save_acc:
                         self.save_nets(epoch)
                     self.best_metric_val = self.best_meter.avg
@@ -212,7 +212,7 @@ class BaseRunner(metaclass=ABCMeta):
                 self.run(test_loader, 'test', 1, self.test_batch_and_get_metrics)
 
     def train_end(self, *args, **kwargs):
-        self.output_weight_distribution("final_weights")
+        # self.output_weight_distribution("final_weights")
         self.writer.add_hparams(
             hparam_dict=hyperparams.get_val_dict(),
             metric_dict={self.best_metric_name: self.best_metric_val}
