@@ -12,14 +12,10 @@ class BaseDeepProcessor(nn.Module):
 
 
 class TunableDeepProcessor(BaseDeepProcessor):
-    def __init__(
-        self, in_features, out_features,
-        intermediate_size=hyperparams.deep_intermediate_size,
-        num_layers=hyperparams.deep_layers
-    ):
+    def __init__(self, in_features, out_features):
         super(TunableDeepProcessor, self).__init__(in_features, out_features)
-        self.intermediate_size = intermediate_size
-        self.num_layers = num_layers
+        self.intermediate_size = hyperparams.deep_intermediate_size
+        self.num_layers = hyperparams.deep_layers
 
         self.net = []
 
