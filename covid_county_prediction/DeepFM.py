@@ -28,8 +28,8 @@ class TunableDeepProcessor(BaseDeepProcessor):
 
             self.net.append(nn.Linear(in_f, out_f))
             if i != self.num_layers - 1:
-                self.net.append(nn.ReLU())
-                self.net.append(nn.BatchNorm1d(out_f))
+                self.net.append(nn.SELU())
+                self.net.append(nn.AlphaDropout(hyperparams.alpha_dropout_prob))
 
         self.net = nn.Sequential(*self.net)
 
@@ -41,14 +41,9 @@ class FixedDeepProcessor(BaseDeepProcessor):
     def __init__(self, in_features, out_features):
         super(FixedDeepProcessor, self).__init__(in_features, out_features)
         self.net = nn.Sequential(
-            nn.Linear(in_features, 512),
+            nn.Linear(in_features, 256),
             nn.ReLU(),
             nn.Dropout(hyperparams.dropout_prob),
-            nn.BatchNorm1d(512),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Dropout(hyperparams.dropout_prob),
-            nn.BatchNorm1d(256),
             nn.Linear(256, out_features)
         )
 
