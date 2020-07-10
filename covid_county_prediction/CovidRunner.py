@@ -13,7 +13,7 @@ def get_default_net():
 
 class CovidRunner(BaseRunner):
     def __init__(
-        self, exp_name, net=get_default_net(), loss_fn=nn.CrossEntropyLoss(),
+        self, exp_name, net, loss_fn=nn.CrossEntropyLoss(),
         load_path=None, sample_batch=None
     ):
         self.is_optimizer_set = False
