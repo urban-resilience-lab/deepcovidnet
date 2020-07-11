@@ -18,7 +18,7 @@ import pickle
 
 
 def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
-    assert mode in ['all', 'train', 'test']
+    assert mode in ['all', 'train', 'train_no_val', 'test']
 
     train_start = global_config.data_start_date
     val_start   = global_config.train_end_date
@@ -29,7 +29,7 @@ def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
     val_dataset   = None
     test_dataset  = None
 
-    if mode in ['all', 'train']:
+    if mode in ['all', 'train', 'train_no_val']:
         train_dataset = CovidCountyDataset(
             train_start,
             val_start,
@@ -38,13 +38,14 @@ def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
             load_features=load_features
         )
 
-        val_dataset = CovidCountyDataset(
-            val_start,
-            test_start,
-            means_stds=train_dataset.means_stds,
-            use_cache=use_cache,
-            load_features=load_features
-        )
+        if mode != 'train_no_val':
+            val_dataset = CovidCountyDataset(
+                val_start,
+                test_start,
+                means_stds=train_dataset.means_stds,
+                use_cache=use_cache,
+                load_features=load_features
+            )
 
     if mode in ['all', 'test']:
         means_stds = None
@@ -65,21 +66,22 @@ def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
 
 
 def get_train_val_test_loaders(mode, load_features=False):
-    assert mode in ['all', 'train', 'test']
+    assert mode in ['all', 'train', 'train_no_val', 'test']
 
     train_dataset, val_dataset, test_dataset = get_train_val_test_datasets(mode, load_features=load_features)
     train_loader = None
     val_loader = None
     test_loader = None
 
-    if mode in ['all', 'train']:
+    if mode in ['all', 'train', 'train_no_val']:
         train_loader = DataLoader(
                             train_dataset,
                             batch_size=hyperparams.batch_size,
                             shuffle=True
                         )
 
-        val_loader = DataLoader(
+        if mode != 'train_no_val':
+            val_loader = DataLoader(
                         val_dataset,
                         batch_size=hyperparams.batch_size,
                         shuffle=False
@@ -116,7 +118,7 @@ def get_analysis_type(analysis_type):
 def add_args(parser):
     parser.add_argument('--exp', required=True)
     parser.add_argument('--runner', default='ordinal', choices=['regular', 'ordinal', 'coral'])
-    parser.add_argument('--mode', default='train', choices=['train', 'val', 'test', 'cache', 'save', 'tune', 'rank'])
+    parser.add_argument('--mode', default='train', choices=['train', 'train_no_val', 'val', 'test', 'cache', 'save', 'tune', 'rank'])
     parser.add_argument('--data-dir', default=global_config.data_base_dir)
     parser.add_argument('--data-save-dir', default=global_config.data_save_dir)
     parser.add_argument('--start-date', default=str(global_config.data_start_date))
@@ -140,7 +142,7 @@ def main():
     if args.load_hps:
         hyperparams.load(args.load_hps)
 
-    if args.mode == 'train':
+    if args.mode == 'train' or args.mode == 'train_no_val':
         train_loader, val_loader, _ = get_train_val_test_loaders(args.mode)
 
         for b in train_loader:
