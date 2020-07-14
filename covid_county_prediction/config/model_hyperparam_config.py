@@ -5,15 +5,15 @@ import sys
 
 def add_hyperparameters(hps):
     with hps(level=HPLevel.HIGH):
-        hps.add(name='lr', val=7.45644e-05, hp_range=[0.00001, 1], log_scale=True)
-        hps.add(name='weight_decay', val=2.49777e-05, hp_range=[0.000001, 0.1], log_scale=True)
-        hps.add(name='batch_size', val=43, hp_range=[16, 128], hp_type=int)
+        hps.add(name='lr', val=0.00041211, hp_range=[0.00001, 0.001], log_scale=True)
+        hps.add(name='weight_decay', val=0.0001, hp_range=[0.000001, 0.1], log_scale=True)
+        hps.add(name='batch_size', val=96, hp_range=[16, 96], hp_type=int)
         hps.add(name='embedding_size', val=283, hp_range=[32, 512], hp_type=int)
-        hps.add(name='higher_order_features_size', val=905, hp_range=[32, 1024], hp_type=int)
-        hps.add(name='deep_intermediate_size', val=460, hp_range=[64, 1024], hp_type=int)
+        hps.add(name='higher_order_features_size', val=1309, hp_range=[32, 1024], hp_type=int)
+        hps.add(name='deep_intermediate_size', val=460, hp_range=[64, 512], hp_type=int)
         hps.add(name='deep_layers', val=3, hp_range=[2, 6], hp_type=int)
-        hps.add(name='dropout_prob', val=0.82188, hp_range=[0, 1])
-        hps.add(name='alpha_dropout_prob', val=0.166, hp_range=[0, 1])
+        hps.add(name='dropout_prob', val=0.5, hp_range=[0, 1])
+        hps.add(name='alpha_dropout_prob', val=0.1, hp_range=[0, 1])
 
     with hps(level=HPLevel.MEDIUM):
         pass
