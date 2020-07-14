@@ -4,6 +4,7 @@ import covid_county_prediction.config.HyperparametersConfig as config
 import pickle
 import torch
 
+
 class HPLevel(IntEnum):
     NONE = -1
     LOW = 0
