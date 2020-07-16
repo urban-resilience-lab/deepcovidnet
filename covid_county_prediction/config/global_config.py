@@ -1,7 +1,6 @@
 from covid_county_prediction.config.base_config import Config
 import sys
 import os
-from pathlib import Path
 from datetime import date, datetime
 
 
