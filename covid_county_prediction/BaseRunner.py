@@ -187,7 +187,7 @@ class BaseRunner(metaclass=ABCMeta):
                     if bad_epochs >= hyperparams.early_stopping_num:
                         break
 
-            elif epoch % config.save_freq == 0:
+            elif epoch % config.save_freq == 0 or epoch == (hyperparams.epochs - 1):
                 self.save_nets(epoch)
 
             for i in range(len(self.lr_schedulers)):
