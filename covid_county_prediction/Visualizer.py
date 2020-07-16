@@ -1,4 +1,3 @@
-
 import plotly.figure_factory as ff
 from datetime import timedelta
 import covid_county_prediction.config.VisualizerConfig as config
@@ -11,6 +10,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import matplotlib.dates as mdates
 import pandas as pd
+import matplotlib as mpl
+import covid_county_prediction.config.features_config as features_config
 
 
 class Visualizer():
@@ -53,7 +54,7 @@ class Visualizer():
         #             )
 
         vs = [abs(labels[k] - class_pred[k]) for k in class_pred.keys()]
-        acc = round((np.array(vs) == 0).sum() * 100 / len(vs), 3)
+        acc = round((np.array(vs) == 0).sum() * 100 / len(vs), 1)
         diff_fig = ff.create_choropleth(
                     fips=list(class_pred.keys()),
                     values=vs,
@@ -99,23 +100,48 @@ class Visualizer():
         )
 
         in_tensors = dataset.get_input_data_for(fips, discrete_labels=False)
+        labels_disc = dataset.get_input_data_for(fips).pop(dataset_config.labels_key)
 
-        labels = in_tensors.pop(dataset_config.labels_key)
+        labels_cont = in_tensors.pop(dataset_config.labels_key)
         with torch.no_grad():
             pred = self.runner.get_class_pred(self.runner.nets[0](in_tensors))
 
-        x = [start_date + timedelta(i) for i in range((end_date - start_date).days)]
-        highest = torch.max(labels).item()
+        x = np.array([start_date + timedelta(i) for i in range((end_date - start_date).days)])
+        c = np.array([abs((labels_disc[i] - pred[i]).item()) for i in range(len(labels_disc))])
 
-        plt.fill_between(
-            x=x,
-            y1=[dataset_config.label_to_range[p.item()][0] for p in pred],
-            y2=[dataset_config.label_to_range[p.item()][1] if p < dataset_config.num_classes - 1 else highest for p in pred],
-            facecolor="orange", # The fill color
-            color='blue',       # The outline color
-            alpha=0.2
-        )
+        mpl.rc('font', family='Arial')
 
-        plt.plot(x, [label.item() for label in labels], linestyle='dashed')
+        # design taken from https://www.machinelearningplus.com/plots/top-50-matplotlib-visualizations-the-master-plots-python/
 
-        plt.show()
+        plt.figure(figsize=(10, 10))
+
+        # decorations
+        plt.tick_params(axis="both", which="both", bottom=False, top=False,
+            labelbottom=True, left=False, right=False, labelleft=True)
+
+        # Lighten borders
+        plt.gca().spines["top"].set_alpha(.3)
+        plt.gca().spines["bottom"].set_alpha(.3)
+        plt.gca().spines["right"].set_alpha(.3)
+        plt.gca().spines["left"].set_alpha(.3)
+
+        plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
+        plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=5))
+
+        # plot
+        plt.plot(x, labels_cont, ':', color=(0.42, 0.02, 0.016, 0.6))
+        plt.scatter(x[c == 0], labels_cont[c == 0], s=60, marker='o',
+                    color=(0.306, 0.349, 0.549), label='predicted = actual')
+        plt.scatter(x[c != 0], labels_cont[c != 0], s=60, marker='o',
+                    color=(1, 0.745, 0.043), label=r'predicted $\ne$ actual')
+
+        # other cosmetics
+        plt.legend(fontsize=15)
+        plt.title(f'County: {features_config.county_info.loc[fips].Name}, {features_config.county_info.loc[fips].State}', fontsize=18)
+        for ytick in plt.yticks()[0]:
+            plt.hlines(ytick, x[0], x[-1], colors='black', alpha=0.3, linestyles="--", lw=0.5)
+
+        plt.ylabel('Rise in Cases')
+
+        return plt.gcf()
+
