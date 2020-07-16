@@ -8,13 +8,16 @@ import torch
 from covid_county_prediction.CovidCountyDataset import CovidCountyDataset
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 import matplotlib.pyplot as plt
+import numpy as np
+import matplotlib.dates as mdates
+import pandas as pd
 
 
 class Visualizer():
     def __init__(self, runner):
         self.runner = runner
 
-    def visualize_us_map(self, dt):
+    def visualize_us_map(self, dt, generate_csv=False, csv_file=None):
         dataset = CovidCountyDataset(
             dt, dt + timedelta(1),
             pickle.load(open(config.training_mean_std_file, 'rb')),
@@ -37,39 +40,56 @@ class Visualizer():
                                         self.runner.nets[0](dataset[i])
                                     ).item()
 
-        pred_fig = ff.create_choropleth(
-                        fips=list(class_pred.keys()),
-                        values=list(class_pred.values())
-                    )
+        # pred_fig = ff.create_choropleth(
+        #                 fips=list(class_pred.keys()),
+        #                 values=list(class_pred.values()),
+        #                 county_outline={'color': 'rgb(255,255,255)', 'width': 0.2}
+        #             )
 
-        labels_fig = ff.create_choropleth(
-                        fips=list(labels.keys()),
-                        values=list(labels.values())
-                    )
+        # labels_fig = ff.create_choropleth(
+        #                 fips=list(labels.keys()),
+        #                 values=list(labels.values()),
+        #                 county_outline={'color': 'rgb(255,255,255)', 'width': 0.2}
+        #             )
 
+        vs = [abs(labels[k] - class_pred[k]) for k in class_pred.keys()]
+        acc = round((np.array(vs) == 0).sum() * 100 / len(vs), 3)
         diff_fig = ff.create_choropleth(
-                        fips=list(class_pred.keys()),
-                        values=[abs(labels[k] - class_pred[k])
-                                for k in class_pred.keys()]
-                    )
+                    fips=list(class_pred.keys()),
+                    values=vs,
+                    county_outline={'color': 'rgb(255,255,255)', 'width': 0.2},
+                    title=dict(
+                        text=f'{dt.strftime("%B, %d")}. Accuracy: {acc}%',
+                        x=0.5
+                    ),
+                    colorscale=['#388697', '#6FD08C', '#FAC05E', '#EF6461'],
+                    legend_title='Class Difference',
+                    width=800,
+                    plot_bgcolor='#FFFFFF',
+                    font=dict(family='arial'),
+                    legend=dict(font=dict(size=15), x=0.9),
+                    autosize=True
+                )
 
-        for i in range(len(pred_fig.data)):
-            if pred_fig.data[i]['name']:
-                try:
-                    pred_fig.data[i]['name'] = \
-                        dataset_config.label_to_str_range[int(pred_fig.data[i]['name'])]
-                except:
-                    pass
+        # for i in range(len(pred_fig.data)):
+        #     if pred_fig.data[i]['name']:
+        #         try:
+        #             pred_fig.data[i]['name'] = \
+        #                 dataset_config.label_to_str_range[int(pred_fig.data[i]['name'])]
+        #             labels_fig.data[i]['name'] = \
+        #                 dataset_config.label_to_str_range[int(labels_fig.data[i]['name'])]
+        #         except:
+        #             pass
 
-        for i in range(len(labels_fig.data)):
-            if labels_fig.data[i]['name']:
-                try:
-                    labels_fig.data[i]['name'] = \
-                        dataset_config.label_to_str_range[int(labels_fig.data[i]['name'])]
-                except:
-                    pass
+        if generate_csv:
+            df = pd.DataFrame(data={
+                    'fips': list(class_pred.keys()),
+                    'pred': list(class_pred.values())
+                }).set_index('fips').sort_index()
 
-        return pred_fig, labels_fig, diff_fig
+            df.to_csv(csv_file)
+
+        return diff_fig
 
     def visualize_time_series(self, fips, start_date, end_date):
         dataset = CovidCountyDataset(
