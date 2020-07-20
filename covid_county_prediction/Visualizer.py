@@ -58,18 +58,16 @@ class Visualizer():
         diff_fig = ff.create_choropleth(
                     fips=list(class_pred.keys()),
                     values=vs,
-                    county_outline={'color': 'rgb(255,255,255)', 'width': 0.2},
+                    county_outline={'color': 'rgb(255,255,255)', 'width': 0.1},
                     title=dict(
                         text=f'{dt.strftime("%B, %d")}. Accuracy: {acc}%',
                         x=0.5
                     ),
                     colorscale=['#388697', '#6FD08C', '#FAC05E', '#EF6461'],
                     legend_title='Class Difference',
-                    width=800,
                     plot_bgcolor='#FFFFFF',
                     font=dict(family='arial'),
-                    legend=dict(font=dict(size=15), x=0.9),
-                    autosize=True
+                    legend=dict(font=dict(size=15), x=0.92),
                 )
 
         # for i in range(len(pred_fig.data)):
@@ -92,28 +90,15 @@ class Visualizer():
 
         return diff_fig
 
-    def visualize_time_series(self, fips, start_date, end_date):
+    def visualize_time_series(self, fips_codes, start_date, end_date):
         dataset = CovidCountyDataset(
             start_date, end_date,
             pickle.load(open(config.training_mean_std_file, 'rb')),
             use_cache=False
         )
 
-        in_tensors = dataset.get_input_data_for(fips, discrete_labels=False)
-        labels_disc = dataset.get_input_data_for(fips).pop(dataset_config.labels_key)
-
-        labels_cont = in_tensors.pop(dataset_config.labels_key)
-        with torch.no_grad():
-            pred = self.runner.get_class_pred(self.runner.nets[0](in_tensors))
-
-        x = np.array([start_date + timedelta(i) for i in range((end_date - start_date).days)])
-        c = np.array([abs((labels_disc[i] - pred[i]).item()) for i in range(len(labels_disc))])
-
-        mpl.rc('font', family='Arial')
-
         # design taken from https://www.machinelearningplus.com/plots/top-50-matplotlib-visualizations-the-master-plots-python/
-
-        plt.figure(figsize=(10, 10))
+        plt.figure(figsize=(13, 13))
 
         # decorations
         plt.tick_params(axis="both", which="both", bottom=False, top=False,
@@ -128,20 +113,51 @@ class Visualizer():
         plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%B %d'))
         plt.gca().xaxis.set_major_locator(mdates.DayLocator(interval=5))
 
-        # plot
-        plt.plot(x, labels_cont, ':', color=(0.42, 0.02, 0.016, 0.6))
-        plt.scatter(x[c == 0], labels_cont[c == 0], s=60, marker='o',
-                    color=(0.306, 0.349, 0.549), label='predicted = actual')
-        plt.scatter(x[c != 0], labels_cont[c != 0], s=60, marker='o',
-                    color=(1, 0.745, 0.043), label=r'predicted $\ne$ actual')
+        mpl.rc('font', family='Arial')
+
+        for fips in fips_codes:
+            in_tensors = dataset.get_input_data_for(
+                            fips,
+                            discrete_labels=False
+                        )
+            labels_disc = \
+                dataset.get_input_data_for(fips).pop(dataset_config.labels_key)
+
+            labels_cont = in_tensors.pop(dataset_config.labels_key)
+            with torch.no_grad():
+                pred = self.runner.get_class_pred(
+                        self.runner.nets[0](in_tensors)
+                    )
+
+            x = np.array([start_date + timedelta(i) for i in range((end_date - start_date).days)])
+            c = np.array([abs((labels_disc[i] - pred[i]).item()) for i in range(len(labels_disc))])
+
+            mpl.rc('font', family='Arial')
+
+            # plot
+            plt.plot(x, labels_cont, ':', label=f'{features_config.county_info.loc[fips].Name}, {features_config.county_info.loc[fips].State}')
+            correct = plt.scatter(x[c == 0], labels_cont[c == 0], s=60, marker='o',
+                                    color=(0.306, 0.349, 0.549))
+            incorrect = plt.scatter(x[c != 0], labels_cont[c != 0], s=60, marker='o',
+                                    color=(1, 0.745, 0.043))
 
         # other cosmetics
-        plt.legend(fontsize=15)
-        plt.title(f'County: {features_config.county_info.loc[fips].Name}, {features_config.county_info.loc[fips].State}', fontsize=18)
-        for ytick in plt.yticks()[0]:
-            plt.hlines(ytick, x[0], x[-1], colors='black', alpha=0.3, linestyles="--", lw=0.5)
+        legend = plt.legend(
+                    [correct, incorrect],
+                    ['predicted = actual', r'predicted $\ne$ actual'],
+                    fontsize=23, loc='lower right'
+                )
 
-        plt.ylabel('Rise in Cases')
+        plt.gca().add_artist(legend)
+        plt.legend(fontsize=23, loc='upper right')
+        for ytick in plt.yticks()[0]:
+            plt.hlines(
+                ytick, x[0], x[-1], colors='black', alpha=0.3,
+                linestyles="--", lw=0.5
+            )
+
+        plt.ylabel('Rise in Cases', fontsize=30)
+        plt.xticks(fontsize=30)
+        plt.yticks(fontsize=30)
 
         return plt.gcf()
-
