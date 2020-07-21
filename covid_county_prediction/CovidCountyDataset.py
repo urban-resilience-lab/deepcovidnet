@@ -51,6 +51,8 @@ class CovidCountyDataset(DataLoader, Dataset):
                 self.load_countywise_cumulative_cases(training_data_start_date, training_data_end_date)
             ]
 
+            features = self.create_hypothetical_features(features)
+
             if means_stds is None:
                 means_stds = [(None, None)] * len(features)
 
@@ -118,6 +120,9 @@ class CovidCountyDataset(DataLoader, Dataset):
                 self.is_cached = True
             else:
                 raise Exception(f'use_cache is True but {saved_cache_path} is absent')
+
+    def create_hypothetical_features(self, features):
+        return features
 
     def _classify_label(self, label):
         assert ceil(label) == floor(label) and label == label

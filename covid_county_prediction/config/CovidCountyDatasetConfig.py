@@ -24,8 +24,8 @@ for i in range(len(config.labels_class_boundaries) + 1):
     config.label_to_str_range[i] = f'{low}{"+" if high is None else f"-{high}"}'
     config.label_to_range[i] = (low, high)
 
-assert global_config.data_start_date == date(2020, 4, 5), 'change label_class_boundaries accordingly before use or explicitly comment this out'
-assert global_config.data_end_date == date(2020, 6, 29), 'change label_class_boundaries accordingly or explicitly comment this out'
+# assert global_config.data_start_date == date(2020, 4, 5), 'change label_class_boundaries accordingly before use or explicitly comment this out'
+# assert global_config.data_end_date == date(2020, 6, 29), 'change label_class_boundaries accordingly or explicitly comment this out'
 
 config.num_classifiers = len(config.labels_class_boundaries)
 config.num_classes = len(config.labels_class_boundaries) + 1
