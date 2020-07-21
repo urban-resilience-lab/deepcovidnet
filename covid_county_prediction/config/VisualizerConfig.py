@@ -10,4 +10,6 @@ config.training_mean_std_file = os.path.join(
                                     'train_mean_std.pickle'
                                 )
 
+config.get_spatial_csv = lambda dt : os.path.join(global_config.data_save_dir, f'viz/spatial_{dt}.csv')
+
 sys.modules[__name__] = config
