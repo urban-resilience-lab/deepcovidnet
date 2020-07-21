@@ -18,7 +18,7 @@ class Visualizer():
     def __init__(self, runner):
         self.runner = runner
 
-    def visualize_us_map(self, dt, generate_csv=False, csv_file=None):
+    def visualize_us_map(self, dt, generate_csv=False):
         dataset = CovidCountyDataset(
             dt, dt + timedelta(1),
             pickle.load(open(config.training_mean_std_file, 'rb')),
@@ -83,10 +83,11 @@ class Visualizer():
         if generate_csv:
             df = pd.DataFrame(data={
                     'fips': list(class_pred.keys()),
-                    'pred': list(class_pred.values())
+                    'pred': list(class_pred.values()),
+                    'actual': [labels[k] for k in class_pred.keys()]
                 }).set_index('fips').sort_index()
 
-            df.to_csv(csv_file)
+            df.to_csv(config.get_spatial_csv(dt))
 
         return diff_fig
 
