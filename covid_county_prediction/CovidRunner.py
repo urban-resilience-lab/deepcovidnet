@@ -56,7 +56,7 @@ class CovidRunner(BaseRunner):
 
         acc = self._get_accuracy(class_pred, labels)
 
-        # class_pred_mean = class_pred.float().mean().item()
+        class_pred_mean = class_pred.float().mean().item()
         # class_pred_std  = class_pred.float().std().item()
 
         # soi_mean = self.nets[0].deep_fm.second_order_interactions.mean().item()
@@ -65,7 +65,7 @@ class CovidRunner(BaseRunner):
         metrics = [
             ('loss', loss.mean().item()),
             ('acc', acc),
-            # ('class_preds_mean', class_pred_mean),
+            ('class_preds_mean', class_pred_mean)
             # ('class_preds_std', class_pred_std),
             # ('soi_mean', soi_mean),
             # ('soi_std', soi_std)
