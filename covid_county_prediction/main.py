@@ -10,11 +10,13 @@ import covid_county_prediction.config.model_hyperparam_config as hyperparams
 import covid_county_prediction.config.CovidCountyDatasetConfig as dataset_config
 from covid_county_prediction.CovidExperiment import CovidExperiment
 from covid_county_prediction.FeatureAnalyzer import FeatureAnalyzer, AnalysisType
+
 import argparse
 from torch.utils.data import DataLoader
 import logging
 from datetime import datetime
 import pickle
+import numpy as np
 
 
 def get_train_val_test_datasets(mode, use_cache=True, load_features=False):
@@ -113,6 +115,8 @@ def get_analysis_type(analysis_type):
         return AnalysisType.GROUP
     elif analysis_type == 'time':
         return AnalysisType.TIME
+    elif analysis_type == 'soi':
+        return AnalysisType.SOI
 
 
 def add_args(parser):
@@ -125,7 +129,7 @@ def add_args(parser):
     parser.add_argument('--end-date', default=str(global_config.data_end_date))
     parser.add_argument('--save-func', default='save_weather_data')
     parser.add_argument('--load-path', default='')
-    parser.add_argument('--analysis-type', default='feature', choices=['feature', 'group', 'time'])
+    parser.add_argument('--analysis-type', default='feature', choices=['feature', 'group', 'time', 'soi'])
     parser.add_argument('--load-hps', default='')
 
 

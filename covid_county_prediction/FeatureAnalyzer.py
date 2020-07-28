@@ -11,6 +11,7 @@ class AnalysisType(Enum):
     GROUP = auto()
     FEATURE = auto()
     TIME = auto()
+    SOI = auto()
 
 
 class FeatureAnalyzer():
@@ -113,6 +114,36 @@ class FeatureAnalyzer():
                 self.__features.append(
                     [f'day_{time_idx + 1}', self.__orig_acc - time_idx_to_perf[time_idx].avg]
                 )
+        elif analysis_type == AnalysisType.SOI:
+            def get_metrics(self, soi_idx, batch):
+                if torch.cuda.is_available():
+                    for k in batch:
+                        batch[k] = batch[k].cuda()
+
+                net = self.runner.nets[0]
+                net.eval()
+                labels = batch.pop(dataset_config.labels_key)
+
+                emb = net.embedding_module(batch)
+                net.deep_fm.compute_soi(emb)
+                net.deep_fm.so_int[:, soi_idx] = 0
+                pred = net.deep_fm.compute_deep(emb)
+                return self.runner.get_metrics(pred, labels, get_loss=False)
+
+            net = self.runner.nets[0]
+            ftr_idx_to_perf = {}
+            for soi_idx in tqdm(net.deep_fm.so_int_labels):
+                for batch in self.val_loader:
+                    self.track_acc(
+                        batch, soi_idx, ftr_idx_to_perf,
+                        batch[list(batch.keys())[0]].shape[0],
+                        get_metrics=lambda batch: get_metrics(self, soi_idx, batch)
+                    )
+
+                self.__features.append([
+                    ' | '.join(net.deep_fm.so_int_labels[soi_idx]),
+                    self.__orig_acc - ftr_idx_to_perf[soi_idx].avg
+                ])
 
         # rank features
         self.__features.sort(key=lambda x: x[-1], reverse=True)
@@ -122,8 +153,10 @@ class FeatureAnalyzer():
 
         return df
 
-    def track_acc(self, batch, ftr_idx, ftr_idx_to_perf, batch_size):
-        acc = self._test_batch_and_get_acc(batch)
+    def track_acc(
+        self, batch, ftr_idx, ftr_idx_to_perf, batch_size, get_metrics=None
+    ):
+        acc = self._test_batch_and_get_acc(batch, get_metrics=get_metrics)
         if ftr_idx in ftr_idx_to_perf:
             ftr_idx_to_perf[ftr_idx].update(acc, n=batch_size)
         else:
@@ -133,13 +166,16 @@ class FeatureAnalyzer():
     def randomize_feature(self, shape):
         return torch.normal(mean=0, std=1, size=shape)
 
-    def _test_batch_and_get_acc(self, batch_dict):
+    def _test_batch_and_get_acc(self, batch_dict, get_metrics=None):
+        if get_metrics is None:
+            get_metrics = self.runner.test_batch_and_get_metrics
+
         for i in range(len(self.runner.nets)):
             self.runner.nets[i].eval()
 
         with torch.no_grad():
             labels = batch_dict[dataset_config.labels_key]
-            metrics = self.runner.test_batch_and_get_metrics(batch_dict)
+            metrics = get_metrics(batch_dict)
             batch_dict.update({dataset_config.labels_key: labels})
             for (name, val) in metrics:
                 if name == self.__acc_name:

@@ -75,13 +75,7 @@ class DeepFM(nn.Module):
 
         self.so_int = None
 
-    def forward(self, features_dict):
-        '''
-        Args:
-            feature_dict: dict of PyTorch tensors of shape (batch_size, self.feature_dim)
-        '''
-        assert dataset_config.labels_key not in features_dict
-
+    def compute_soi(self, features_dict):
         sorted_keys = sorted(features_dict)
 
         # FM Part
@@ -91,7 +85,7 @@ class DeepFM(nn.Module):
             for i in range(len(sorted_keys)):
                 for j in range(i + 1, len(sorted_keys)):
                     self.so_int_labels[idx] = \
-                        (sorted_keys[i], sorted_keys[j])
+                        [sorted_keys[i], sorted_keys[j]]
                     idx += 1
 
         self.so_int = torch.empty(
@@ -113,7 +107,9 @@ class DeepFM(nn.Module):
         if torch.cuda.is_available():
             self.so_int = self.so_int.cuda()
 
-        # Deep Part
+    def compute_deep(self, features_dict):
+        sorted_keys = sorted(features_dict)
+
         concatenated_features = [features_dict[sorted_keys[i]] for i in range(len(sorted_keys))]
         concatenated_features = torch.cat(concatenated_features, dim=1)
         higher_order_interactions = self.deep_processor(concatenated_features)
@@ -122,4 +118,18 @@ class DeepFM(nn.Module):
         classifier_in += \
             [torch.stack([features_dict[k] for k in sorted_keys]).sum(0)]
         classifier_in = torch.cat(classifier_in, dim=1)
+
         return self.classifier(classifier_in)
+
+    def forward(self, features_dict):
+        '''
+        Args:
+            feature_dict: dict of PyTorch tensors of shape (batch_size, self.feature_dim)
+        '''
+        assert dataset_config.labels_key not in features_dict
+
+        # FM Part
+        self.compute_soi(features_dict)
+
+        # Deep Part
+        return self.compute_deep(features_dict)
