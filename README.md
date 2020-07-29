@@ -1,4 +1,4 @@
-# covid_county_prediction
+# DeepCOVIDNet: A Deep Learning Modelfor Predictive Surveillance of COVID-19Using Heterogeneous Features andTheir Interactions
 
 ### Instructions to run
 
