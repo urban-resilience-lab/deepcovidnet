@@ -1,4 +1,4 @@
-# DeepCOVIDNet: A Deep Learning Modelfor Predictive Surveillance of COVID-19Using Heterogeneous Features andTheir Interactions
+# DeepCOVIDNet: A Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions
 
 ### Instructions to run
 
