@@ -126,9 +126,8 @@ class FeatureAnalyzer():
 
                 emb = net.embedding_module(batch)
                 net.deep_fm.compute_soi(emb)
-                net.deep_fm.so_int[:, soi_idx] = 0
-                pred = net.deep_fm.compute_deep(emb)
-                return self.runner.get_metrics(pred, labels, get_loss=False)
+                mean_imp = net.deep_fm.so_int[:, soi_idx].abs().mean().item()
+                return [('imp', mean_imp)]
 
             net = self.runner.nets[0]
             ftr_idx_to_perf = {}
@@ -137,12 +136,13 @@ class FeatureAnalyzer():
                     self.track_acc(
                         batch, soi_idx, ftr_idx_to_perf,
                         batch[list(batch.keys())[0]].shape[0],
-                        get_metrics=lambda batch: get_metrics(self, soi_idx, batch)
+                        get_metrics=lambda batch: get_metrics(self, soi_idx, batch),
+                        metric_name='imp'
                     )
 
                 self.__features.append([
                     ' | '.join(net.deep_fm.so_int_labels[soi_idx]),
-                    self.__orig_acc - ftr_idx_to_perf[soi_idx].avg
+                    ftr_idx_to_perf[soi_idx].avg
                 ])
 
         # rank features
@@ -154,9 +154,12 @@ class FeatureAnalyzer():
         return df
 
     def track_acc(
-        self, batch, ftr_idx, ftr_idx_to_perf, batch_size, get_metrics=None
+        self, batch, ftr_idx, ftr_idx_to_perf, batch_size, get_metrics=None,
+        metric_name=None
     ):
-        acc = self._test_batch_and_get_acc(batch, get_metrics=get_metrics)
+        acc = self._test_batch_and_get_acc(
+                batch, get_metrics=get_metrics, metric_name=metric_name
+            )
         if ftr_idx in ftr_idx_to_perf:
             ftr_idx_to_perf[ftr_idx].update(acc, n=batch_size)
         else:
@@ -166,9 +169,14 @@ class FeatureAnalyzer():
     def randomize_feature(self, shape):
         return torch.normal(mean=0, std=1, size=shape)
 
-    def _test_batch_and_get_acc(self, batch_dict, get_metrics=None):
+    def _test_batch_and_get_acc(
+        self, batch_dict, get_metrics=None, metric_name=None
+    ):
         if get_metrics is None:
             get_metrics = self.runner.test_batch_and_get_metrics
+
+        if metric_name is None:
+            metric_name = self.__acc_name
 
         for i in range(len(self.runner.nets)):
             self.runner.nets[i].eval()
@@ -178,7 +186,7 @@ class FeatureAnalyzer():
             metrics = get_metrics(batch_dict)
             batch_dict.update({dataset_config.labels_key: labels})
             for (name, val) in metrics:
-                if name == self.__acc_name:
+                if name == metric_name:
                     return val
 
             raise Exception(f'{self.__acc_name} not found in metrics')
