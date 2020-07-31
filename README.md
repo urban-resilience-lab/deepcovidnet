@@ -1,5 +1,7 @@
 # DeepCOVIDNet: A Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions
 
+This is the official GitHub repository of the DeepCOVIDNet model to forecast the range of increase in the number of infected cases in all U.S. counties.
+
 ## Instructions to run
 
 ```bash
@@ -23,6 +25,8 @@ Some feature used in the model like Venables Distance and reproduction number we
  ### Adding Features
  
  Including additional features is easy. To add a new feature, simply define a function in ```covid_county_prediction/RawFeatureExtractor.py``` that parses raw data, a function in ```covid_county_prediction/DataSaver.py``` to save the processed feature value from the raw data, and a function in ```covid_county_prediction/DataLoader.py``` to load the saved feature. Refer the example of the following three functions to understand more: [```read_sg_social_distancing```](https://github.com/urban-resilience-lab/covid-county-prediction/blob/master/covid_county_prediction/RawFeatureExtractor.py#L287), [```save_sg_social_distancing```](https://github.com/urban-resilience-lab/covid-county-prediction/blob/master/covid_county_prediction/DataSaver.py#L29), and [```load_sg_social_distancing```](https://github.com/urban-resilience-lab/covid-county-prediction/blob/master/covid_county_prediction/DataLoader.py#L34).
+ 
+## Results
 
 ## Citation
 
