@@ -1,4 +1,4 @@
-# DeepCOVIDNet: A Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions
+# DeepCOVIDNet: An Interpretable Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions
 
 This is the official GitHub repository of the DeepCOVIDNet model to forecast the range of increase in the number of infected cases in all U.S. counties.
 
