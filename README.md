@@ -4,6 +4,8 @@ This is the official GitHub repository of the DeepCOVIDNet model to forecast the
 
 ## Instructions to run
 
+For full functionality, use Python 3.7+. If not available, Python 3.6 will work but will not support automatic hyperparameter tuning. 
+
 ```bash
 #setup the project
 python3 setup.py develop
