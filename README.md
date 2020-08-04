@@ -1,6 +1,6 @@
 # DeepCOVIDNet: An Interpretable Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions
 
-This is the official GitHub repository of the DeepCOVIDNet model to forecast the range of increase in the number of infected cases in all U.S. counties.
+This is the official GitHub repository of the DeepCOVIDNet model to forecast the range of increase in the number of infected cases in all U.S. counties. For full details, refer to the original paper at https://arxiv.org/abs/2008.00115.
 
 ## Instructions to run
 
@@ -32,4 +32,13 @@ Some feature used in the model like Venables Distance and reproduction number we
 
 ## Citation
 
-Please cite this work if it was helpful in your research.
+Please cite this work if it was helpful in your research:
+
+```
+@article{ankit2020deepcovidnet,
+ title={DeepCOVIDNet: An Interpretable Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions},
+ author={Ramchandani, Ankit and Fan, Chao and Mostafavi, Ali},
+ journal={arXiv preprint arXiv:2008.00115},
+ year={2020}
+}
+```
