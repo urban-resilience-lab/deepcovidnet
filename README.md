@@ -11,7 +11,7 @@ For full functionality, use Python 3.7+. If not available, Python 3.6 will work 
 python3 setup.py develop
 #start working/testing now
 ```
-Note that most interaction with this code will require changing file directories in the ```deepcovidnet/config/``` folder to match directories in the user's machine. Of particular importance is to change the values of variables ```data_base_dir``` to a location where all raw data will be stored and ```data_save_dir``` to a location where all saved data must be stored in the ```deepcovidnet/config/global_config.py/``` file.
+Note that most interaction with this code will require changing file directories in the ```deepcovidnet/config/``` folder to match directories in the user's machine. Of particular importance is to change the values of variables ```data_base_dir``` to a location where all raw data will be stored and ```data_save_dir``` to a location where all saved data must be stored in the ```deepcovidnet/config/global_config.py``` file.
 
 Note that the ```data_base_dir``` directory expects certain structure inside to be parseable easily. This structure can be changed by modifying the ```deepcovidnet/deepcovidnet/config/RawFeatureExtractorConfig.py``` file, but the default expected structure is outlined below. The ```data_base_dir``` is expected to contain the following subdirectories:
  - ```core_places/```: Location of [SafeGraph Core Places data](https://docs.safegraph.com/v4.0/docs#section-core-places)
