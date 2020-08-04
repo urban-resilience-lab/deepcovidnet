@@ -28,8 +28,6 @@ Some feature used in the model like Venables Distance and reproduction number we
  
  Including additional features is easy. To add a new feature, simply define a function in ```deepcovidnet/RawFeatureExtractor.py``` that parses raw data, a function in ```deepcovidnet/DataSaver.py``` to save the processed feature value from the raw data, and a function in ```deepcovidnet/DataLoader.py``` to load the saved feature. Refer the example of the following three functions to understand more: [```read_sg_social_distancing```](https://github.com/urban-resilience-lab/deepcovidnet/blob/master/deepcovidnet/RawFeatureExtractor.py#L287), [```save_sg_social_distancing```](https://github.com/urban-resilience-lab/deepcovidnet/blob/master/deepcovidnet/DataSaver.py#L29), and [```load_sg_social_distancing```](https://github.com/urban-resilience-lab/deepcovidnet/blob/master/deepcovidnet/DataLoader.py#L34).
  
-## Results
-
 ## Citation
 
 Please cite this work if it was helpful in your research:
