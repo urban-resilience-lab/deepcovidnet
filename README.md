@@ -57,10 +57,11 @@ Please cite this work if it was helpful in your research:
 
 ```
 @article{ankit2020deepcovidnet,
- title={DeepCOVIDNet: An Interpretable Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions},
- author={Ramchandani, Ankit and Fan, Chao and Mostafavi, Ali},
- journal={arXiv preprint arXiv:2008.00115},
- year={2020}
+  title={DeepCOVIDNet: An Interpretable Deep Learning Model for Predictive Surveillance of COVID-19 Using Heterogeneous Features and Their Interactions},
+  author={Ramchandani, Ankit and Fan, Chao and Mostafavi, Ali},
+  journal={IEEE Access},
+  year={2020},
+  publisher={IEEE}
 }
 ```
 
